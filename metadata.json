@@ -1,0 +1,7 @@
+{
+  "name": "The Source",
+  "description": "A service marketplace app connecting clients with local professionals for home services, repairs, and more.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
