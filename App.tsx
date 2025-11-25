@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Home, Search, PlusSquare, User, Inbox, Grid, Monitor, Wallet } from 'lucide-react';
 import { ViewState, UserType, UserData, Provider, Lead, AdminData, JobPost } from './types';
 import { INITIAL_PROVIDERS } from './constants';
@@ -76,6 +76,11 @@ const App: React.FC = () => {
 
   const [showBonusModal, setShowBonusModal] = useState(false);
   const [bonusAmount, setBonusAmount] = useState(0);
+
+  // Scroll to top when view changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [currentView]);
 
   const navigateTo = (view: ViewState | 'HIRE_MODE') => {
     if (view === 'HIRE_MODE') {
@@ -278,28 +283,21 @@ const App: React.FC = () => {
 
   const showNav = !['LOGIN', 'ONBOARDING_PROVIDER', 'JOB_CLOSING', 'ADMIN', 'PROFILE_DETAIL', 'LEAD_DETAIL', 'TERMS'].includes(currentView);
 
-  // ... código anterior ...
-
-  const showNav = !['LOGIN', 'ONBOARDING_PROVIDER', 'JOB_CLOSING', 'ADMIN', 'PROFILE_DETAIL', 'LEAD_DETAIL', 'TERMS'].includes(currentView);
-
-  // ... código anterior ...
-
-  const showNav = !['LOGIN', 'ONBOARDING_PROVIDER', 'JOB_CLOSING', 'ADMIN', 'PROFILE_DETAIL', 'LEAD_DETAIL', 'TERMS'].includes(currentView);
-
   return (
-    // CAMBIO AQUÍ: Quitamos el bg-gray-200 y el flex center. Ahora es full height.
-    // max-w-md mx-auto mantiene el diseño bonito en PC (como Instagram web) pero llena el celular.
-    <div className="min-h-screen bg-white font-sans text-gray-900">
-      <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-xl flex flex-col">
+    // Main Container - Web Responsive
+    <div className="min-h-screen w-full bg-gray-50 flex justify-center">
+      
+      {/* App Column - Max width constraint for desktop, full width for mobile */}
+      <div className="w-full max-w-md bg-white min-h-screen shadow-2xl relative flex flex-col">
         
-        {/* Área de Contenido con Scroll */}
-        <div className="flex-1 overflow-y-auto pb-20 no-scrollbar">
+        {/* Content Area - Scrolls natively */}
+        <div className={`flex-1 w-full ${showNav ? 'pb-20' : ''}`}>
           {renderContent()}
         </div>
         
-        {/* Barra de Navegación Fija Abajo */}
+        {/* Navigation - Fixed to bottom of view */}
         {showNav && (
-           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex justify-around items-center z-50 max-w-md mx-auto shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+           <div className="fixed bottom-0 z-50 w-full max-w-md bg-white border-t border-gray-100 px-2 py-2 flex justify-between items-center text-[10px] font-medium text-gray-400 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
               {userType === 'CLIENT' || currentView === 'HOME' ? (
                 <>
                   <NavBtn active={currentView === 'HOME'} icon={Home} label="Inicio" onClick={() => navigateTo('HOME')} />
@@ -322,11 +320,10 @@ const App: React.FC = () => {
   );
 };
 
-// ... resto del código (NavBtn y export default)
 const NavBtn: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
-  <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors min-w-[50px] py-1 ${active ? 'text-blue-600' : 'hover:text-gray-600'}`}>
-    <Icon size={22} strokeWidth={active ? 2.5 : 2} />
-    <span>{label}</span>
+  <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors min-w-[50px] py-1 px-2 rounded-xl ${active ? 'text-blue-600 bg-blue-50' : 'hover:text-gray-600 hover:bg-gray-50'}`}>
+    <Icon size={24} strokeWidth={active ? 2.5 : 2} />
+    <span className="text-[10px] font-medium">{label}</span>
   </button>
 );
 
