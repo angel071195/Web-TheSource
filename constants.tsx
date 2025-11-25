@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Snowflake, Thermometer, Zap, Droplets, BrickWall, Wrench, Sparkles, Truck, Ruler, PaintBucket, Bike } from 'lucide-react';
 
@@ -54,12 +55,21 @@ export const WALLETS_BOLIVIA = [
 ];
 
 export const AVATARS = [
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Cal',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Molly',
+  // Heroes / Fantasy / Adventure
+  'https://api.dicebear.com/7.x/adventurer/svg?seed=Felix',
+  'https://api.dicebear.com/7.x/adventurer/svg?seed=Spooky',
+  'https://api.dicebear.com/7.x/adventurer/svg?seed=Bella',
+  'https://api.dicebear.com/7.x/adventurer/svg?seed=Abby',
+  // Robots / Sci-Fi
+  'https://api.dicebear.com/7.x/bottts/svg?seed=RoboCop',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=C3PO',
+  'https://api.dicebear.com/7.x/bottts/svg?seed=WallE',
+  // Stylized / Cool People
+  'https://api.dicebear.com/7.x/micah/svg?seed=Wednesday',
+  'https://api.dicebear.com/7.x/micah/svg?seed=Sheldon',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Iron',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Bat',
+  'https://api.dicebear.com/7.x/avataaars/svg?seed=Wonder',
 ];
 
 export const INITIAL_PROVIDERS = [

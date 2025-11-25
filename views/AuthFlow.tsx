@@ -1,5 +1,6 @@
+
 import React, { useState } from 'react';
-import { Phone, ArrowRight, User, MapPin, Camera, Check, ChevronLeft, Upload, Briefcase, Mail, FileText } from 'lucide-react';
+import { Phone, ArrowRight, User, MapPin, Camera, Check, ChevronLeft, Upload, Briefcase, Mail, FileText, Crosshair, Loader2 } from 'lucide-react';
 import { Button, Input, TextArea, Modal } from '../components/UIComponents';
 import { CATEGORIES, PRICING_UNITS, BANKS_BOLIVIA, WALLETS_BOLIVIA, COLORS, AVATARS } from '../constants';
 import { UserData, Tariff, PaymentMethod } from '../types';
@@ -26,9 +27,64 @@ const FacebookIcon = () => (
   </svg>
 );
 
+// Simulated database of Bolivian cities for autocomplete
+const BOLIVIA_CITIES = [
+  "Santa Cruz de la Sierra", "Puerto Quijarro", "Puerto Suárez", "La Paz", "El Alto", 
+  "Cochabamba", "Oruro", "Sucre", "Tarija", "Potosí", "Trinidad", "Cobija", 
+  "Montero", "Warnes", "Cotoca", "Yacuiba", "Riberalta", "Viacha"
+];
+
 export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
   const [step, setStep] = useState<'LANDING' | 'DETAILS' | 'PHOTO'>('LANDING');
   const [tempData, setTempData] = useState({ name: '', location: '', phone: '', email: '', image: '' });
+  
+  // Location States
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const text = e.target.value;
+    setTempData({...tempData, location: text});
+    
+    if (text.length > 2) {
+      const filtered = BOLIVIA_CITIES.filter(city => 
+        city.toLowerCase().includes(text.toLowerCase())
+      );
+      setSuggestions(filtered);
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const selectSuggestion = (city: string) => {
+    setTempData({...tempData, location: city});
+    setSuggestions([]);
+  };
+
+  const handleGPSLocation = () => {
+    setIsLocating(true);
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          // In a real app, we would use a Geocoding API here with the lat/lng.
+          // For this simulation, we will simulate a successful find near the user's probable area.
+          setTimeout(() => {
+            setTempData({...tempData, location: "Puerto Quijarro, Santa Cruz"});
+            setIsLocating(false);
+            setSuggestions([]);
+          }, 1500);
+        },
+        (error) => {
+          console.error(error);
+          alert("No pudimos obtener tu ubicación precisa. Por favor ingrésala manualmente.");
+          setIsLocating(false);
+        }
+      );
+    } else {
+      alert("Tu navegador no soporta geolocalización.");
+      setIsLocating(false);
+    }
+  };
 
   if (step === 'LANDING') {
     return (
@@ -117,8 +173,47 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
          <div className="w-full space-y-4">
            <Input label="¿Cuál es tu nombre?" value={tempData.name} onChange={(e) => setTempData({...tempData, name: e.target.value})} placeholder="Nombre completo" icon={User} />
            <Input label="Correo Electrónico" value={tempData.email} onChange={(e) => setTempData({...tempData, email: e.target.value})} placeholder="ejemplo@correo.com" type="email" icon={Mail} />
-           <Input label="¿Dónde te ubicas?" value={tempData.location} onChange={(e) => setTempData({...tempData, location: e.target.value})} placeholder="Ciudad, Barrio" icon={MapPin} />
-           <Button fullWidth onClick={() => setStep('PHOTO')}>Continuar</Button>
+           
+           {/* Smart Location Input */}
+           <div className="relative mb-4 w-full">
+             <label className="block text-sm font-semibold text-gray-900 mb-2">¿Dónde te ubicas?</label>
+             <div className="relative">
+               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                 <MapPin size={20} />
+               </div>
+               <input 
+                 className="w-full bg-white border border-gray-200 text-gray-900 text-base rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none py-3.5 pl-12 pr-12 placeholder:text-gray-400 transition-all"
+                 placeholder="Escribe tu ciudad o barrio..."
+                 value={tempData.location}
+                 onChange={handleLocationChange}
+               />
+               <button 
+                  onClick={handleGPSLocation}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 rounded-xl transition-colors"
+                  title="Usar GPS"
+               >
+                  {isLocating ? <Loader2 size={18} className="animate-spin" /> : <Crosshair size={18} />}
+               </button>
+             </div>
+
+             {/* Autocomplete Dropdown */}
+             {suggestions.length > 0 && (
+               <div className="absolute z-50 w-full bg-white border border-gray-100 rounded-xl shadow-xl mt-2 max-h-40 overflow-y-auto animate-in fade-in zoom-in duration-200">
+                 {suggestions.map((city, idx) => (
+                   <button
+                     key={idx}
+                     onClick={() => selectSuggestion(city)}
+                     className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 font-medium flex items-center gap-2 border-b border-gray-50 last:border-0"
+                   >
+                     <MapPin size={14} className="text-gray-400" />
+                     {city}
+                   </button>
+                 ))}
+               </div>
+             )}
+           </div>
+
+           <Button fullWidth onClick={() => setStep('PHOTO')} disabled={!tempData.name || !tempData.location}>Continuar</Button>
          </div>
       </div>
     );
@@ -127,29 +222,29 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
   if (step === 'PHOTO') {
     return (
       <div className="flex flex-col min-h-screen bg-white p-6 pt-12 items-center max-w-md mx-auto w-full animate-in fade-in slide-in-from-right duration-300">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Bienvenido!</h2>
-          <p className="text-gray-500 mb-6 text-center">Sube una foto o elige un avatar.</p>
+          <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Casi listo!</h2>
+          <p className="text-gray-500 mb-6 text-center text-sm">Sube una foto o elige un personaje.</p>
           
-          <button className="w-24 h-24 rounded-full bg-gray-100 border-4 border-white shadow-xl flex items-center justify-center mb-6 hover:bg-gray-200 transition-colors">
-              <Camera size={32} className="text-gray-400" />
+          <button className="w-24 h-24 rounded-full bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center mb-6 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all text-gray-400">
+              <Camera size={28} />
           </button>
 
-          <p className="text-xs font-bold text-gray-400 mb-4 uppercase tracking-widest">O elige uno</p>
+          <p className="text-[10px] font-bold text-gray-400 mb-4 uppercase tracking-widest">O SELECCIONA UN AVATAR</p>
           
-          <div className="grid grid-cols-3 gap-4 w-full mb-8">
+          <div className="grid grid-cols-4 gap-3 w-full mb-8">
               {AVATARS.map((avatar, i) => (
                   <button 
                     key={i}
                     onClick={() => setTempData({...tempData, image: avatar})}
-                    className={`p-1 rounded-full border-2 transition-all ${tempData.image === avatar ? 'border-blue-500 scale-110' : 'border-transparent hover:bg-gray-50'}`}
+                    className={`aspect-square rounded-2xl overflow-hidden border-2 transition-all shadow-sm ${tempData.image === avatar ? 'border-blue-600 ring-2 ring-blue-100 scale-105' : 'border-gray-100 hover:border-gray-300'}`}
                   >
-                      <img src={avatar} alt={`Avatar ${i}`} className="w-full h-full rounded-full" />
+                      <img src={avatar} alt={`Avatar ${i}`} className="w-full h-full object-cover" />
                   </button>
               ))}
           </div>
 
           <div className="w-full mt-auto">
-            <Button fullWidth onClick={() => onLogin('CLIENT', tempData)}>Finalizar</Button>
+            <Button fullWidth onClick={() => onLogin('CLIENT', tempData)}>Finalizar Registro</Button>
           </div>
       </div>
     );
