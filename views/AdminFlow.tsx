@@ -1,8 +1,9 @@
 
 import React, { useState } from 'react';
 import { AdminData } from '../types';
-import { Button, Badge, Input } from '../components/UIComponents';
+import { Button, Badge, Input, VerificationCard } from '../components/UIComponents';
 import { ArrowLeft, Check, X, AlertTriangle, Users, CreditCard, PieChart, DollarSign, BarChart3, UserCheck, Search } from 'lucide-react';
+import { AVATARS } from '../constants';
 
 interface AdminDashboardProps {
     adminData: AdminData;
@@ -21,8 +22,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminData, onBac
         { id: 'c2', name: 'Juan Perez', phone: '70099999' },
     ];
     const mockWorkers = [
-        { id: 'w1', name: 'Carlos Mamani', phone: '60012345', profession: 'Electricista' },
-        { id: 'w2', name: 'Ana Flores', phone: '60054321', profession: 'Limpieza' },
+        { id: 'w1', name: 'Carlos Mamani', phone: '60012345', profession: 'Electricista', image: 'https://randomuser.me/api/portraits/men/32.jpg' },
+        { id: 'w2', name: 'Ana Flores', phone: '60054321', profession: 'Limpieza', image: 'https://randomuser.me/api/portraits/women/44.jpg' },
     ];
 
     const tabs = [
@@ -189,17 +190,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminData, onBac
                          </div>
                          <div>
                              <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2"><UserCheck size={18} /> Trabajadores ({mockWorkers.length})</h3>
-                             <div className="space-y-2">
+                             {/* VERIFICATION CARD GRID */}
+                             <div className="grid grid-cols-1 gap-4">
                                  {mockWorkers.map(w => (
-                                     <div key={w.id} className="bg-white p-3 rounded-xl border border-gray-100 flex justify-between items-center">
-                                         <div>
-                                             <p className="font-bold text-sm">{w.name}</p>
-                                             <p className="text-xs text-gray-500">{w.profession}</p>
-                                         </div>
-                                         <div className="text-right">
-                                             <p className="text-xs text-gray-400">{w.phone}</p>
-                                             <span className="text-[10px] text-green-600 font-bold">Activo</span>
-                                         </div>
+                                     <div key={w.id} className="scale-90 origin-left">
+                                         <VerificationCard name={w.name} profession={w.profession} image={w.image} memberId={`MBR-${w.id.toUpperCase()}`} />
                                      </div>
                                  ))}
                              </div>

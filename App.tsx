@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, Search, PlusSquare, User, Inbox, Grid, Monitor, Wallet } from 'lucide-react';
+import { Home, Search, PlusSquare, User, Inbox, Grid, Monitor, Wallet, LogOut, Menu } from 'lucide-react';
 import { ViewState, UserType, UserData, Provider, Lead, AdminData, JobPost } from './types';
 import { INITIAL_PROVIDERS } from './constants';
+import emailjs from '@emailjs/browser';
 
 // Views
 import { LoginScreen, ProviderOnboarding } from './views/AuthFlow';
@@ -10,9 +11,15 @@ import { HomeView, ProfileDetail, ClientProfileView, RequestServiceView, SearchV
 import { WorkerDashboard, WalletView, MyServicesPanel, JobClosingSimulation, OpportunitiesView, LeadDetailView } from './views/ProviderFlow';
 import { AdminDashboard } from './views/AdminFlow';
 
+// EMAILJS CONFIGURATION
+const EMAIL_SERVICE_ID = "service_ytz8gpd";
+const EMAIL_TEMPLATE_ID = "template_gkqblyu";
+const EMAIL_PUBLIC_KEY = "9DpJRC-7vdu7TOeXl";
+
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('LOGIN');
   const [userType, setUserType] = useState<UserType>('CLIENT');
+  const [isAdmin, setIsAdmin] = useState(false);
   
   // App State
   const [userData, setUserData] = useState<UserData>({
@@ -82,6 +89,16 @@ const App: React.FC = () => {
     window.scrollTo(0, 0);
   }, [currentView]);
 
+  // Admin Security Logic
+  useEffect(() => {
+    const ADMIN_EMAIL = "elderangelo071195@gmail.com";
+    if (userData.email && userData.email.trim().toLowerCase() === ADMIN_EMAIL) {
+        setIsAdmin(true);
+    } else {
+        setIsAdmin(false);
+    }
+  }, [userData.email]);
+
   const navigateTo = (view: ViewState | 'HIRE_MODE') => {
     if (view === 'HIRE_MODE') {
         setCurrentView('HOME');
@@ -90,6 +107,25 @@ const App: React.FC = () => {
     setSelectedProvider(null);
     setSelectedLead(null);
     setCurrentView(view);
+  };
+
+  const sendWelcomeEmail = (data: Partial<UserData>) => {
+      if (!data.email || !data.name) return;
+
+      const templateParams = {
+          to_name: data.name,
+          to_email: data.email,
+          user_name: data.name,
+          message: "Bienvenido a The Source. Tu registro ha sido exitoso.",
+          reply_to: "contacto.thesource@gmail.com"
+      };
+
+      emailjs.send(EMAIL_SERVICE_ID, EMAIL_TEMPLATE_ID, templateParams, EMAIL_PUBLIC_KEY)
+          .then((response) => {
+              console.log('Welcome Email Sent!', response.status, response.text);
+          }, (err) => {
+              console.log('Failed to send welcome email...', err);
+          });
   };
 
   const handleJobSuccess = (points: number) => {
@@ -191,6 +227,11 @@ const App: React.FC = () => {
         return <LoginScreen onLogin={(type, data) => {
             setUserData({ ...userData, ...data });
             setUserType(type);
+            
+            if (data.email) {
+                 sendWelcomeEmail(data);
+            }
+            
             navigateTo(type === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
         }} />;
 
@@ -199,7 +240,12 @@ const App: React.FC = () => {
           onComplete={(data) => {
             const bonus = calculateBonus();
             setBonusAmount(bonus);
-            setUserData({ ...userData, ...data, walletBalance: bonus, type: 'PROVIDER' });
+            const finalData = { ...userData, ...data, walletBalance: bonus, type: 'PROVIDER' as UserType };
+            setUserData(finalData);
+            
+            // Send Welcome Email
+            sendWelcomeEmail(finalData);
+            
             setShowBonusModal(true);
           }}
           onCancel={() => navigateTo('CLIENT_PROFILE')}
@@ -237,7 +283,12 @@ const App: React.FC = () => {
         /> : null;
 
       case 'CLIENT_PROFILE':
-        return <ClientProfileView profile={userData} onNavigate={navigateTo} />;
+        return <ClientProfileView 
+            profile={userData} 
+            onNavigate={navigateTo} 
+            onUpdateProfile={(newData) => setUserData({ ...userData, ...newData })} 
+            isAdmin={isAdmin}
+        />;
 
       case 'WORKER_DASHBOARD':
         return <WorkerDashboard 
@@ -271,7 +322,7 @@ const App: React.FC = () => {
         />;
 
       case 'HELP':
-        return <div className="p-8 text-center"><h2 className="font-bold mb-4">Ayuda</h2><p>Centro de soporte...</p><button onClick={() => navigateTo('CLIENT_PROFILE')} className="mt-4 text-blue-500">Volver</button></div>;
+        return <div className="p-8 text-center max-w-2xl mx-auto"><h2 className="font-bold mb-4">Ayuda</h2><p>Centro de soporte...</p><button onClick={() => navigateTo('CLIENT_PROFILE')} className="mt-4 text-blue-500">Volver</button></div>;
       
       case 'TERMS':
         return <TermsView onBack={() => navigateTo('CLIENT_PROFILE')} />;
@@ -284,46 +335,93 @@ const App: React.FC = () => {
   const showNav = !['LOGIN', 'ONBOARDING_PROVIDER', 'JOB_CLOSING', 'ADMIN', 'PROFILE_DETAIL', 'LEAD_DETAIL', 'TERMS'].includes(currentView);
 
   return (
-    // Main Container - Web Responsive
-    <div className="min-h-screen w-full bg-gray-50 flex justify-center">
+    // Main Container - Full Screen, Adaptive
+    <div className="min-h-screen w-full bg-gray-50 flex">
       
-      {/* App Column - Max width constraint for desktop, full width for mobile */}
-      <div className="w-full max-w-md bg-white min-h-screen shadow-2xl relative flex flex-col">
-        
-        {/* Content Area - Scrolls natively */}
-        <div className={`flex-1 w-full ${showNav ? 'pb-20' : ''}`}>
-          {renderContent()}
-        </div>
-        
-        {/* Navigation - Fixed to bottom of view */}
-        {showNav && (
-           <div className="fixed bottom-0 z-50 w-full max-w-md bg-white border-t border-gray-100 px-2 py-2 flex justify-between items-center text-[10px] font-medium text-gray-400 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+      {/* Sidebar Navigation - Visible on Desktop (lg+) */}
+      {showNav && (
+        <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-100 h-screen sticky top-0 shadow-sm z-50">
+           <div className="p-6">
+              <h1 className="text-2xl font-black text-gray-900 tracking-tighter">THE SOURCE</h1>
+              <p className="text-[10px] font-bold text-blue-600 tracking-[0.3em] uppercase">Solutions App</p>
+           </div>
+           
+           <nav className="flex-1 px-4 space-y-2">
               {userType === 'CLIENT' || currentView === 'HOME' ? (
                 <>
-                  <NavBtn active={currentView === 'HOME'} icon={Home} label="Inicio" onClick={() => navigateTo('HOME')} />
-                  <NavBtn active={currentView === 'SEARCH'} icon={Search} label="Buscar" onClick={() => navigateTo('SEARCH')} />
-                  <NavBtn active={currentView === 'REQUEST_SERVICE'} icon={PlusSquare} label="Pedir" onClick={() => navigateTo('REQUEST_SERVICE')} />
-                  <NavBtn active={currentView === 'CLIENT_PROFILE'} icon={User} label="Perfil" onClick={() => navigateTo('CLIENT_PROFILE')} />
+                  <NavSidebarItem active={currentView === 'HOME'} icon={Home} label="Inicio" onClick={() => navigateTo('HOME')} />
+                  <NavSidebarItem active={currentView === 'SEARCH'} icon={Search} label="Buscar" onClick={() => navigateTo('SEARCH')} />
+                  <NavSidebarItem active={currentView === 'REQUEST_SERVICE'} icon={PlusSquare} label="Pedir Servicio" onClick={() => navigateTo('REQUEST_SERVICE')} />
+                  <NavSidebarItem active={currentView === 'CLIENT_PROFILE'} icon={User} label="Mi Perfil" onClick={() => navigateTo('CLIENT_PROFILE')} />
                 </>
               ) : (
                 <>
-                  <NavBtn active={currentView === 'WORKER_DASHBOARD'} icon={Inbox} label="Solicitudes" onClick={() => navigateTo('WORKER_DASHBOARD')} />
-                  <NavBtn active={currentView === 'MY_SERVICES'} icon={Grid} label="Panel" onClick={() => navigateTo('MY_SERVICES')} />
-                  <NavBtn active={currentView === 'OPPORTUNITIES'} icon={Monitor} label="Muro" onClick={() => navigateTo('OPPORTUNITIES')} />
-                  <NavBtn active={currentView === 'WALLET'} icon={Wallet} label="Billetera" onClick={() => navigateTo('WALLET')} />
+                  <NavSidebarItem active={currentView === 'WORKER_DASHBOARD'} icon={Inbox} label="Solicitudes" onClick={() => navigateTo('WORKER_DASHBOARD')} />
+                  <NavSidebarItem active={currentView === 'MY_SERVICES'} icon={Grid} label="Mi Panel" onClick={() => navigateTo('MY_SERVICES')} />
+                  <NavSidebarItem active={currentView === 'OPPORTUNITIES'} icon={Monitor} label="Muro de Empleos" onClick={() => navigateTo('OPPORTUNITIES')} />
+                  <NavSidebarItem active={currentView === 'WALLET'} icon={Wallet} label="Billetera" onClick={() => navigateTo('WALLET')} />
                 </>
               )}
+           </nav>
+
+           <div className="p-4 border-t border-gray-100">
+              <button 
+                onClick={() => {
+                   if(confirm("¿Cerrar Sesión?")) setCurrentView('LOGIN');
+                }}
+                className="flex items-center gap-3 text-gray-500 hover:text-red-500 hover:bg-red-50 p-3 rounded-xl w-full transition-colors font-medium text-sm"
+              >
+                  <LogOut size={18} />
+                  <span>Cerrar Sesión</span>
+              </button>
            </div>
-        )}
-      </div>
+        </aside>
+      )}
+
+      {/* Main Content Area */}
+      <main className="flex-1 w-full relative">
+        <div className={`w-full mx-auto ${showNav ? 'pb-24 lg:pb-0' : ''}`}>
+          {renderContent()}
+        </div>
+      </main>
+      
+      {/* Bottom Navigation - Visible on Mobile/Tablet (Hidden on lg+) */}
+      {showNav && (
+         <div className="lg:hidden fixed bottom-0 z-50 w-full bg-white border-t border-gray-100 px-4 py-2 flex justify-around items-center text-[10px] font-medium text-gray-400 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] safe-area-pb">
+            {userType === 'CLIENT' || currentView === 'HOME' ? (
+              <>
+                <NavBtn active={currentView === 'HOME'} icon={Home} label="Inicio" onClick={() => navigateTo('HOME')} />
+                <NavBtn active={currentView === 'SEARCH'} icon={Search} label="Buscar" onClick={() => navigateTo('SEARCH')} />
+                <NavBtn active={currentView === 'REQUEST_SERVICE'} icon={PlusSquare} label="Pedir" onClick={() => navigateTo('REQUEST_SERVICE')} />
+                <NavBtn active={currentView === 'CLIENT_PROFILE'} icon={User} label="Perfil" onClick={() => navigateTo('CLIENT_PROFILE')} />
+              </>
+            ) : (
+              <>
+                <NavBtn active={currentView === 'WORKER_DASHBOARD'} icon={Inbox} label="Solicitudes" onClick={() => navigateTo('WORKER_DASHBOARD')} />
+                <NavBtn active={currentView === 'MY_SERVICES'} icon={Grid} label="Panel" onClick={() => navigateTo('MY_SERVICES')} />
+                <NavBtn active={currentView === 'OPPORTUNITIES'} icon={Monitor} label="Muro" onClick={() => navigateTo('OPPORTUNITIES')} />
+                <NavBtn active={currentView === 'WALLET'} icon={Wallet} label="Billetera" onClick={() => navigateTo('WALLET')} />
+              </>
+            )}
+         </div>
+      )}
     </div>
   );
 };
 
+// Component for Mobile Bottom Nav Button
 const NavBtn: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
-  <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors min-w-[50px] py-1 px-2 rounded-xl ${active ? 'text-blue-600 bg-blue-50' : 'hover:text-gray-600 hover:bg-gray-50'}`}>
+  <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors min-w-[60px] py-1.5 px-2 rounded-xl ${active ? 'text-blue-600 bg-blue-50' : 'hover:text-gray-600 hover:bg-gray-50'}`}>
     <Icon size={24} strokeWidth={active ? 2.5 : 2} />
     <span className="text-[10px] font-medium">{label}</span>
+  </button>
+);
+
+// Component for Desktop Sidebar Item
+const NavSidebarItem: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
+  <button onClick={onClick} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ${active ? 'bg-gray-900 text-white shadow-lg shadow-gray-200' : 'text-gray-500 hover:bg-gray-50'}`}>
+      <Icon size={20} />
+      <span className="font-bold text-sm">{label}</span>
   </button>
 );
 

@@ -1,7 +1,8 @@
+
 import React, { useState } from 'react';
-import { Search, MapPin, Star, Calculator, Share2, Flag, MessageCircle, ChevronRight, CreditCard, HelpCircle, FileText, Filter, User, ArrowLeft, ShieldCheck } from 'lucide-react';
+import { Search, MapPin, Star, Calculator, Share2, Flag, MessageCircle, ChevronRight, CreditCard, HelpCircle, FileText, Filter, User, ArrowLeft, ShieldCheck, Mail, Grid, List, Briefcase, Phone, Camera, Lock } from 'lucide-react';
 import { Button, Input, Modal, Badge, TextArea } from '../components/UIComponents';
-import { CATEGORIES } from '../constants';
+import { CATEGORIES, AVATARS } from '../constants';
 import { Provider, UserData, ViewState } from '../types';
 
 interface HomeProps {
@@ -13,9 +14,9 @@ interface HomeProps {
 
 export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectProvider, onToggleSearch }) => {
   return (
-    <div className="pb-24 w-full">
+    <div className="w-full max-w-7xl mx-auto">
       {/* Header */}
-      <div className="p-6 flex justify-between items-start bg-white sticky top-0 z-10 shadow-sm/50 backdrop-blur-md bg-white/80">
+      <div className="p-6 flex justify-between items-start bg-white/80 backdrop-blur-md sticky top-0 z-10 border-b border-gray-100 lg:bg-transparent lg:border-none lg:static">
          <div>
             <div className="flex items-center gap-1 mb-1">
                <span className="text-xs font-bold text-gray-400">MI PERFIL</span>
@@ -24,71 +25,84 @@ export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectPro
                <MapPin size={14} className="text-red-500" />
                <span className="text-sm font-bold text-gray-800">{userData.location || 'Seleccionar Ubicación'}</span>
             </div>
-            <h1 className="text-xl font-black text-gray-900">THE SOURCE</h1>
-            <p className="text-[10px] font-bold text-blue-600 tracking-widest uppercase">Solutions App</p>
+            <div className="lg:hidden">
+                <h1 className="text-xl font-black text-gray-900">THE SOURCE</h1>
+                <p className="text-[10px] font-bold text-blue-600 tracking-widest uppercase">Solutions App</p>
+            </div>
          </div>
-         <button onClick={onToggleSearch} className="p-2 bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">
-            <Search size={20} />
+         <button onClick={onToggleSearch} className="p-2.5 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors shadow-sm">
+            <Search size={20} className="text-gray-600" />
          </button>
       </div>
 
-      {/* Banner */}
-      <div className="mx-6 mb-8 p-6 bg-gray-900 rounded-3xl relative overflow-hidden shadow-xl shadow-gray-200">
-         <div className="relative z-10">
-            <h3 className="text-white font-bold text-lg mb-1">¿Buscas algo especial?</h3>
-            <p className="text-gray-400 text-xs mb-4">Publica tu solicitud y recibe ofertas de expertos.</p>
-            <button className="bg-white text-gray-900 px-4 py-2 rounded-lg text-xs font-bold hover:bg-gray-100">Publicar Solicitud</button>
-         </div>
-         <div className="absolute -right-4 -bottom-8 opacity-20">
-             <Search size={120} className="text-white" />
-         </div>
-      </div>
+      <div className="p-6">
+          {/* Banner */}
+          <div className="mb-8 p-8 bg-gray-900 rounded-[32px] relative overflow-hidden shadow-xl shadow-gray-200 flex flex-col justify-center min-h-[180px]">
+             <div className="relative z-10 max-w-md">
+                <h3 className="text-white font-bold text-2xl mb-2">¿Buscas algo especial?</h3>
+                <p className="text-gray-400 text-sm mb-6">Publica tu solicitud y recibe ofertas de expertos en minutos.</p>
+                <button className="bg-white text-gray-900 px-6 py-3 rounded-xl text-sm font-bold hover:bg-blue-50 transition-colors shadow-lg">Publicar Solicitud</button>
+             </div>
+             <div className="absolute -right-10 -bottom-10 opacity-10 rotate-12">
+                 <Search size={200} className="text-white" />
+             </div>
+          </div>
 
-      {/* Categories */}
-      <div className="mb-8">
-         <h2 className="px-6 text-lg font-bold text-gray-900 mb-4">Categorías</h2>
-         <div className="flex overflow-x-auto px-6 gap-4 no-scrollbar pb-2">
-            {CATEGORIES.map((cat, i) => (
-               <button key={cat.id} className="flex flex-col items-center gap-2 min-w-[72px] group">
-                  <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border transition-all group-hover:scale-105 ${i === 0 ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-gray-200 text-gray-500 group-hover:border-gray-300'}`}>
-                     {cat.icon}
-                  </div>
-                  <span className={`text-xs font-medium ${i===0 ? 'text-blue-600' : 'text-gray-500'}`}>{cat.label.split(' ')[0]}</span>
-               </button>
-            ))}
-         </div>
-      </div>
+          {/* Categories */}
+          <div className="mb-10">
+             <div className="flex justify-between items-end mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Categorías</h2>
+                <button className="text-blue-600 text-sm font-bold hover:underline">Ver todas</button>
+             </div>
+             
+             <div className="flex overflow-x-auto gap-4 no-scrollbar pb-4 -mx-6 px-6 lg:mx-0 lg:px-0 lg:grid lg:grid-cols-6 xl:grid-cols-8">
+                {CATEGORIES.map((cat, i) => (
+                   <button key={cat.id} className="flex flex-col items-center gap-3 min-w-[80px] group transition-all">
+                      <div className={`w-20 h-20 rounded-2xl flex items-center justify-center border transition-all group-hover:scale-105 group-hover:shadow-md ${i === 0 ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-gray-200 text-gray-500 group-hover:border-gray-300'}`}>
+                         {cat.icon}
+                      </div>
+                      <span className={`text-xs font-bold ${i===0 ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-800'}`}>{cat.label.split(' ')[0]}</span>
+                   </button>
+                ))}
+             </div>
+          </div>
 
-      {/* Providers */}
-      <div className="px-6">
-         <h2 className="text-lg font-bold text-gray-900 mb-4">Recomendados</h2>
-         <div className="space-y-4">
-            {providers.map(p => (
-               <div 
-                 key={p.id} 
-                 onClick={() => onSelectProvider(p)}
-                 className="bg-white p-3 rounded-2xl flex gap-4 shadow-sm hover:shadow-md transition-all cursor-pointer border border-transparent hover:border-gray-100"
-               >
-                  <img src={p.image} alt={p.name} className="w-24 h-28 rounded-xl object-cover bg-gray-100" />
-                  <div className="flex-1 py-1">
-                     <div className="flex justify-between items-start mb-1">
-                        <h3 className="font-bold text-gray-900">{p.name}</h3>
-                        {p.isVerified && <Badge color="blue">✓</Badge>}
-                     </div>
-                     <p className="text-xs text-gray-500 mb-2">{p.professions[0]}</p>
-                     <div className="flex items-center gap-1 mb-2">
-                        <Star size={14} className="text-yellow-400 fill-yellow-400" />
-                        <span className="text-xs font-bold text-gray-900">{p.rating}</span>
-                        <span className="text-xs text-gray-400">({p.reviews})</span>
-                     </div>
-                     <div className="flex gap-2">
-                        <Badge color="green">Bs. {p.price}</Badge>
-                        {p.issuesInvoice && <Badge color="blue">Factura</Badge>}
-                     </div>
-                  </div>
-               </div>
-            ))}
-         </div>
+          {/* Providers Grid */}
+          <div>
+             <h2 className="text-xl font-bold text-gray-900 mb-6">Recomendados para ti</h2>
+             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {providers.map(p => (
+                   <div 
+                     key={p.id} 
+                     onClick={() => onSelectProvider(p)}
+                     className="bg-white p-4 rounded-[24px] flex md:flex-col gap-4 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer border border-gray-100 group"
+                   >
+                      <div className="w-24 h-24 md:w-full md:h-48 rounded-2xl overflow-hidden bg-gray-100 relative">
+                          <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                          <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm">
+                              <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                              <span className="text-xs font-bold">{p.rating}</span>
+                          </div>
+                      </div>
+                      
+                      <div className="flex-1 flex flex-col">
+                         <div className="flex justify-between items-start mb-1">
+                            <div>
+                                <h3 className="font-bold text-gray-900 text-lg">{p.name}</h3>
+                                <p className="text-xs text-gray-500 font-medium">{p.professions[0]}</p>
+                            </div>
+                            {p.isVerified && <Badge color="blue">✓</Badge>}
+                         </div>
+                         
+                         <div className="mt-auto pt-3 flex items-center gap-2">
+                            <Badge color="green">Bs. {p.price}</Badge>
+                            {p.issuesInvoice && <Badge color="gray">Factura</Badge>}
+                         </div>
+                      </div>
+                   </div>
+                ))}
+             </div>
+          </div>
       </div>
     </div>
   );
@@ -96,45 +110,68 @@ export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectPro
 
 export const SearchView: React.FC<{ providers: Provider[], onSelectProvider: (p: Provider) => void }> = ({ providers, onSelectProvider }) => {
     return (
-        <div className="p-6 pb-24 w-full">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">Buscar</h1>
+        <div className="p-6 w-full max-w-7xl mx-auto min-h-screen">
+            <h1 className="text-3xl font-bold text-gray-900 mb-8">Buscar</h1>
             
-            <div className="flex gap-2 mb-6">
-                <Input placeholder="Buscar servicio..." icon={Search} className="flex-1 mb-0" />
-                <button className="p-3 bg-gray-100 rounded-2xl hover:bg-gray-200 transition-colors"><Filter size={20} /></button>
-            </div>
-
-            <div className="mb-6">
-                <h3 className="font-bold text-sm text-gray-900 mb-3">Categorías Populares</h3>
-                <div className="flex flex-wrap gap-2">
-                    {CATEGORIES.slice(0, 6).map(cat => (
-                        <button key={cat.id} className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
-                            {cat.label}
-                        </button>
-                    ))}
+            <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 mb-8 max-w-3xl">
+                <div className="flex gap-3">
+                    <Input placeholder="Buscar servicio, profesional o categoría..." icon={Search} className="flex-1 mb-0 border-none bg-gray-50" />
+                    <button className="p-4 bg-gray-900 text-white rounded-2xl hover:bg-black transition-colors shadow-lg shadow-gray-300">
+                        <Filter size={20} />
+                    </button>
                 </div>
             </div>
 
-            <div>
-                <h3 className="font-bold text-sm text-gray-900 mb-3">Resultados</h3>
-                <div className="space-y-3">
-                    {providers.map(p => (
-                        <div key={p.id} onClick={() => onSelectProvider(p)} className="flex items-center gap-3 p-3 bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:bg-gray-50">
-                            <img src={p.image} className="w-16 h-16 rounded-xl object-cover" alt={p.name} />
-                            <div className="flex-1">
-                                <h4 className="font-bold text-gray-900 text-sm">{p.name}</h4>
-                                <p className="text-xs text-gray-500">{p.professions[0]}</p>
-                                <div className="flex items-center gap-1 mt-1">
-                                    <Star size={12} className="text-yellow-400 fill-yellow-400" />
-                                    <span className="text-xs font-bold">{p.rating}</span>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                {/* Filters Sidebar (Desktop) */}
+                <div className="hidden lg:block space-y-6">
+                    <div>
+                        <h3 className="font-bold text-sm text-gray-900 mb-3">Categorías</h3>
+                        <div className="flex flex-wrap gap-2">
+                            {CATEGORIES.slice(0, 8).map(cat => (
+                                <button key={cat.id} className="px-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs text-gray-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
+                                    {cat.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div>
+                        <h3 className="font-bold text-sm text-gray-900 mb-3">Rango de Precio</h3>
+                        <div className="h-1 bg-gray-200 rounded-full mb-2"></div>
+                        <div className="flex justify-between text-xs text-gray-500">
+                            <span>Bs. 0</span>
+                            <span>Bs. 500+</span>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Results */}
+                <div className="lg:col-span-3">
+                    <h3 className="font-bold text-gray-900 mb-4 text-lg">Resultados ({providers.length})</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {providers.map(p => (
+                            <div key={p.id} onClick={() => onSelectProvider(p)} className="flex md:flex-col items-center md:items-start gap-4 p-4 bg-white rounded-2xl shadow-sm border border-gray-100 cursor-pointer hover:border-blue-300 transition-all group">
+                                <img src={p.image} className="w-16 h-16 md:w-full md:h-48 rounded-xl object-cover" alt={p.name} />
+                                <div className="flex-1 w-full">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h4 className="font-bold text-gray-900 text-base">{p.name}</h4>
+                                            <p className="text-xs text-gray-500">{p.professions[0]}</p>
+                                        </div>
+                                        <div className="flex items-center gap-1">
+                                            <Star size={14} className="text-yellow-400 fill-yellow-400" />
+                                            <span className="text-xs font-bold">{p.rating}</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="mt-3 flex justify-between items-center pt-3 border-t border-gray-50">
+                                        <span className="block font-bold text-blue-600 text-sm">Bs. {p.price}</span>
+                                        <span className="text-[10px] text-gray-400 uppercase tracking-wide">{p.unit}</span>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <span className="block font-bold text-blue-600 text-sm">Bs. {p.price}</span>
-                                <span className="text-[10px] text-gray-400">{p.unit}</span>
-                            </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </div>
         </div>
@@ -145,31 +182,43 @@ export const RequestServiceView: React.FC<{ onSubmit: () => void }> = ({ onSubmi
     const [invoiceRequired, setInvoiceRequired] = useState(false);
 
     return (
-        <div className="p-6 pb-24 w-full min-h-full bg-gray-50">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">Publicar Solicitud</h1>
-            <div className="bg-white p-6 rounded-3xl shadow-sm space-y-4">
-                <Input label="¿Qué profesional buscas?" placeholder="Ej. Electricista" />
-                <TextArea label="Detalles del trabajo" placeholder="Describe lo que necesitas reparar o instalar..." />
-                <div className="flex gap-4">
-                    <Input label="¿Para cuándo?" placeholder="Ej. Hoy" className="flex-1" />
-                    <Input label="Presupuesto (Bs)" placeholder="Opcional" className="flex-1" type="number" />
-                </div>
+        <div className="p-6 w-full min-h-screen flex items-center justify-center">
+            <div className="w-full max-w-2xl">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Publicar Solicitud</h1>
+                <p className="text-gray-500 mb-8">Describe lo que necesitas y recibe propuestas de profesionales.</p>
                 
-                <div className="flex items-center justify-between py-2">
-                    <span className="font-medium text-gray-900 text-sm">¿Requiere Factura?</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" className="sr-only peer" checked={invoiceRequired} onChange={e => setInvoiceRequired(e.target.checked)} />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                </div>
+                <div className="bg-white p-8 rounded-[32px] shadow-xl shadow-gray-200/50 border border-gray-100 space-y-6">
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <Input label="¿Qué profesional buscas?" placeholder="Ej. Electricista" icon={User} />
+                        <Input label="¿Para cuándo?" placeholder="Ej. Hoy, Mañana por la tarde" className="flex-1" />
+                    </div>
+                    
+                    <TextArea label="Detalles del trabajo" placeholder="Describe lo que necesitas reparar o instalar con el mayor detalle posible..." className="min-h-[150px]" />
+                    
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <Input label="Presupuesto Estimado (Bs)" placeholder="Opcional" className="flex-1" type="number" />
+                        <Input label="Teléfono de contacto" placeholder="700..." type="tel" />
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2 bg-white rounded-lg border border-gray-200"><FileText size={20} className="text-gray-600"/></div>
+                            <div>
+                                <span className="block font-bold text-gray-900 text-sm">¿Requiere Factura?</span>
+                                <span className="text-xs text-gray-500">Se mostrará en la solicitud</span>
+                            </div>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" className="sr-only peer" checked={invoiceRequired} onChange={e => setInvoiceRequired(e.target.checked)} />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
 
-                <Input label="Teléfono de contacto" placeholder="700..." type="tel" />
-                
-                <Button fullWidth onClick={onSubmit} className="mt-4">
-                    Publicar Ahora
-                </Button>
+                    <Button fullWidth onClick={onSubmit} className="h-14 text-lg mt-4 bg-gray-900 hover:bg-black">
+                        Publicar Solicitud
+                    </Button>
+                </div>
             </div>
-            <p className="text-center text-xs text-gray-400 mt-4">Los profesionales verán tu solicitud y te contactarán.</p>
         </div>
     );
 };
@@ -183,7 +232,7 @@ export const ProfileDetail: React.FC<{ provider: Provider, onBack: () => void, o
 
   const calculatePoints = () => {
       const num = parseFloat(simAmount);
-      return isNaN(num) ? 0 : Math.floor(num / 10); // Updated Logic: 1 point per 10 Bs
+      return isNaN(num) ? 0 : Math.floor(num / 10);
   };
 
   const handleShareWhatsApp = () => {
@@ -198,88 +247,107 @@ export const ProfileDetail: React.FC<{ provider: Provider, onBack: () => void, o
   };
 
   return (
-    <div className="bg-gray-50 min-h-full w-full pb-24">
-       <div className="relative h-72">
-          <img src={provider.image} className="w-full h-full object-cover" alt="" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-          <button onClick={onBack} className="absolute top-6 left-6 p-2 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-black/40">
-             <ChevronRight className="rotate-180" size={24} />
-          </button>
-          <div className="absolute top-6 right-6 flex gap-3">
-             <button 
-                onClick={() => setShowReportModal(true)}
-                className="p-2 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-red-500 hover:text-white transition-colors"
-                title="Reportar Usuario"
-             >
-                <Flag size={20} />
-             </button>
-             <button 
-                onClick={handleShareWhatsApp}
-                className="p-2 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-green-500 transition-colors"
-                title="Compartir en WhatsApp"
-             >
-                <Share2 size={20} />
-             </button>
-          </div>
-          <div className="absolute bottom-6 left-6">
-             <h1 className="text-3xl font-bold text-white mb-2">{provider.name}</h1>
-             <div className="flex gap-2">
-                {provider.professions.map(p => <Badge key={p} color="gray">{p}</Badge>)}
-             </div>
-          </div>
-       </div>
+    <div className="bg-gray-50 min-h-screen w-full pb-24 lg:pb-0">
+       <div className="max-w-6xl mx-auto lg:p-8 lg:flex lg:gap-8 lg:items-start">
+           
+           {/* Left Column / Mobile Header */}
+           <div className="lg:w-1/3 lg:sticky lg:top-24">
+               <div className="relative h-72 lg:h-auto lg:rounded-[32px] lg:overflow-hidden lg:shadow-2xl">
+                  <img src={provider.image} className="w-full h-full object-cover lg:aspect-[3/4]" alt="" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent lg:from-black/60" />
+                  
+                  {/* Mobile Back Button */}
+                  <button onClick={onBack} className="absolute top-6 left-6 p-2 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-black/40 lg:hidden">
+                     <ChevronRight className="rotate-180" size={24} />
+                  </button>
+                  
+                  {/* Desktop Back Button */}
+                  <button onClick={onBack} className="hidden lg:flex absolute top-6 left-6 px-4 py-2 bg-black/40 backdrop-blur-md rounded-xl text-white hover:bg-black/60 items-center gap-2 text-sm font-bold">
+                     <ArrowLeft size={16} /> Volver
+                  </button>
 
-       <div className="p-6 -mt-6 rounded-t-3xl bg-gray-50 relative z-10 space-y-6">
-          
-          {/* Credentials Button */}
-          <button 
-             onClick={() => provider.cvUrl ? alert(`Abriendo documento: ${provider.cvUrl}`) : alert("El usuario no ha hecho público sus documentos.")}
-             className="w-full bg-white p-4 rounded-2xl flex items-center gap-4 border border-gray-200 shadow-sm hover:bg-gray-50 transition-colors"
-          >
-             <div className="p-3 bg-purple-50 text-purple-600 rounded-xl">
-                 <FileText size={24} />
-             </div>
-             <div className="text-left flex-1">
-                 <p className="font-bold text-gray-900">Ver Credenciales / CV</p>
-                 <p className="text-xs text-gray-500">Documentación Verificada</p>
-             </div>
-             <ChevronRight size={20} className="text-gray-400" />
-          </button>
+                  <div className="absolute top-6 right-6 flex gap-3">
+                     <button onClick={() => setShowReportModal(true)} className="p-2 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-red-500 hover:text-white transition-colors">
+                        <Flag size={20} />
+                     </button>
+                     <button onClick={handleShareWhatsApp} className="p-2 bg-black/20 backdrop-blur-md rounded-full text-white hover:bg-green-500 transition-colors">
+                        <Share2 size={20} />
+                     </button>
+                  </div>
+                  
+                  <div className="absolute bottom-6 left-6">
+                     <h1 className="text-3xl font-bold text-white mb-2">{provider.name}</h1>
+                     <div className="flex flex-wrap gap-2">
+                        {provider.professions.map(p => <Badge key={p} color="gray">{p}</Badge>)}
+                     </div>
+                  </div>
+               </div>
+           </div>
 
-          <button onClick={() => setShowSimModal(true)} className="w-full bg-emerald-50 p-4 rounded-2xl flex items-center justify-between border border-emerald-100 hover:bg-emerald-100 transition-colors">
-             <div className="flex items-center gap-3">
-                <div className="p-2 bg-emerald-100 rounded-lg text-emerald-600"><Calculator size={24} /></div>
-                <div className="text-left">
-                   <p className="font-bold text-emerald-900">Simular Puntos</p>
-                   <p className="text-xs text-emerald-600">Calcula cuánto ganarías</p>
+           {/* Right Column / Details */}
+           <div className="flex-1">
+                <div className="p-6 -mt-6 rounded-t-3xl bg-gray-50 relative z-10 space-y-6 lg:mt-0 lg:p-0">
+                    
+                    {/* Action Buttons Grid */}
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <button 
+                            onClick={() => provider.cvUrl ? alert(`Abriendo documento: ${provider.cvUrl}`) : alert("El usuario no ha hecho público sus documentos.")}
+                            className="bg-white p-4 rounded-2xl flex items-center gap-4 border border-gray-200 shadow-sm hover:border-purple-300 hover:shadow-md transition-all group"
+                        >
+                            <div className="p-3 bg-purple-50 text-purple-600 rounded-xl group-hover:bg-purple-100 transition-colors">
+                                <FileText size={24} />
+                            </div>
+                            <div className="text-left flex-1">
+                                <p className="font-bold text-gray-900">Ver Credenciales</p>
+                                <p className="text-xs text-gray-500">Documentación Verificada</p>
+                            </div>
+                        </button>
+
+                        <button onClick={() => setShowSimModal(true)} className="bg-white p-4 rounded-2xl flex items-center gap-4 border border-gray-200 shadow-sm hover:border-emerald-300 hover:shadow-md transition-all group">
+                            <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl group-hover:bg-emerald-100 transition-colors">
+                                <Calculator size={24} />
+                            </div>
+                            <div className="text-left flex-1">
+                                <p className="font-bold text-gray-900">Simular Puntos</p>
+                                <p className="text-xs text-gray-500">Calcula tu ganancia</p>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div className="grid md:grid-cols-2 gap-6">
+                        <div className="space-y-6">
+                             <div>
+                                <h3 className="font-bold text-gray-900 mb-3 text-lg">Tarifas</h3>
+                                <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-4">
+                                    {provider.tariffs.map((t, i) => (
+                                    <div key={i} className="flex justify-between items-center border-b border-gray-50 last:border-0 pb-3 last:pb-0">
+                                        <span className="font-medium text-gray-700">{t.service}</span>
+                                        <span className="font-bold text-blue-600 text-lg">Bs. {t.price}</span>
+                                    </div>
+                                    ))}
+                                </div>
+                             </div>
+                        </div>
+                        
+                        <div>
+                             <h3 className="font-bold text-gray-900 mb-3 text-lg">Sobre mí</h3>
+                             <p className="text-gray-600 text-sm leading-7 bg-white p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[160px]">{provider.bio}</p>
+                        </div>
+                    </div>
                 </div>
-             </div>
-             <ChevronRight size={20} className="text-emerald-400" />
-          </button>
-
-          <div>
-             <h3 className="font-bold text-gray-900 mb-3">Tarifas</h3>
-             <div className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
-                {provider.tariffs.map((t, i) => (
-                   <div key={i} className="flex justify-between items-center border-b border-gray-50 last:border-0 pb-2 last:pb-0">
-                      <span className="font-medium text-gray-700">{t.service}</span>
-                      <span className="font-bold text-blue-600">Bs. {t.price}</span>
-                   </div>
-                ))}
-             </div>
-          </div>
-
-          <div>
-             <h3 className="font-bold text-gray-900 mb-3">Sobre mí</h3>
-             <p className="text-gray-500 text-sm leading-relaxed bg-white p-4 rounded-2xl shadow-sm border border-gray-100">{provider.bio}</p>
-          </div>
+           </div>
        </div>
 
-       <div className="fixed bottom-6 left-0 right-0 p-4 bg-transparent max-w-[360px] mx-auto z-30">
-          <Button fullWidth icon={MessageCircle} onClick={() => setShowRequestModal(true)}>SOLICITAR SERVICIO</Button>
+       <div className="fixed bottom-6 left-0 right-0 p-4 bg-transparent max-w-md mx-auto z-30 lg:hidden">
+          <Button fullWidth icon={MessageCircle} onClick={() => setShowRequestModal(true)} className="shadow-2xl shadow-blue-500/30">SOLICITAR SERVICIO</Button>
+       </div>
+       
+       {/* Desktop Floating Action Button */}
+       <div className="hidden lg:block fixed bottom-10 right-10 z-30">
+          <Button icon={MessageCircle} onClick={() => setShowRequestModal(true)} className="h-16 px-8 rounded-full text-lg shadow-2xl shadow-blue-500/30 bg-gray-900 hover:bg-black">SOLICITAR SERVICIO</Button>
        </div>
 
-       <Modal isOpen={showRequestModal} onClose={() => setShowRequestModal(false)} title="Solicitar Contacto" position="bottom">
+       <Modal isOpen={showRequestModal} onClose={() => setShowRequestModal(false)} title="Solicitar Contacto" position="center">
            <p className="text-gray-500 text-sm mb-4">Describe tu problema. El profesional desbloqueará el chat si está interesado.</p>
            <TextArea placeholder="Hola, necesito ayuda con..." value={msg} onChange={e => setMsg(e.target.value)} />
            <Button fullWidth onClick={() => { onSendRequest(msg); setShowRequestModal(false); }}>Enviar Solicitud</Button>
@@ -324,86 +392,127 @@ export const ProfileDetail: React.FC<{ provider: Provider, onBack: () => void, o
   );
 };
 
-export const ClientProfileView: React.FC<{ profile: UserData, onNavigate: (v: ViewState) => void }> = ({ profile, onNavigate }) => {
+interface ClientProfileViewProps {
+    profile: UserData;
+    onNavigate: (v: ViewState) => void;
+    onUpdateProfile: (data: Partial<UserData>) => void;
+    isAdmin: boolean;
+}
+
+export const ClientProfileView: React.FC<ClientProfileViewProps> = ({ profile, onNavigate, onUpdateProfile, isAdmin }) => {
     const [showSimModal, setShowSimModal] = useState(false);
     const [simAmount, setSimAmount] = useState('');
     
+    // EDIT PROFILE STATE
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [editData, setEditData] = useState<Partial<UserData>>({});
+
     const calculatePoints = () => {
       const num = parseFloat(simAmount);
       return isNaN(num) ? 0 : Math.floor(num / 10); // 10 Bs = 1 Point
     };
 
+    const handleEditOpen = () => {
+        setEditData({
+            name: profile.name,
+            email: profile.email,
+            phone: profile.phone,
+            location: profile.location,
+            image: profile.image,
+            bio: profile.bio
+        });
+        setShowEditModal(true);
+    };
+
+    const handleSaveProfile = () => {
+        // Direct save, no verification required
+        onUpdateProfile(editData);
+        setShowEditModal(false);
+        alert("Perfil actualizado correctamente.");
+    };
+
     return (
-        <div className="p-6 pb-24 w-full">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">Mi Perfil</h1>
+        <div className="p-6 w-full max-w-5xl mx-auto">
+            <h1 className="text-3xl font-bold text-gray-900 mb-8">Mi Perfil</h1>
             
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-full bg-gray-200 border-2 border-white shadow-md flex items-center justify-center overflow-hidden">
-                        {profile.image ? <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" /> : <User className="text-gray-400" />}
-                    </div>
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900">{profile.name}</h2>
-                        <p className="text-gray-500 text-sm">{profile.email || 'Agrega tu correo'}</p>
-                    </div>
-                </div>
-                <button className="text-blue-600 font-bold text-sm">Editar</button>
-            </div>
-
-            <div className="bg-gray-900 rounded-3xl p-6 mb-8 relative overflow-hidden shadow-xl shadow-gray-200">
-                <div className="relative z-10">
-                    <p className="text-gray-400 text-[10px] font-bold tracking-wider mb-2">MIS PUNTOS</p>
-                    <p className="text-white text-5xl font-black tracking-tight">{profile.loyaltyPoints || 0}</p>
-                    <p className="text-gray-400 text-xs mt-4">1 Punto = 1 Bs para futuros pagos.</p>
-                    <p className="text-gray-500 text-[10px] mt-1">(10 Bs gastados = 1 Punto ganado)</p>
-                </div>
-                <div className="absolute -right-6 -bottom-6 opacity-10 text-white">
-                    <Star size={140} />
-                </div>
-                <button onClick={() => setShowSimModal(true)} className="absolute top-6 right-6 p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors" title="Simular Puntos">
-                   <Calculator size={18} className="text-white" />
-                </button>
-            </div>
-
-            <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-2xl p-6 mb-8 text-white relative overflow-hidden">
-                <div className="relative z-10">
-                    <h3 className="font-bold text-lg mb-2">¿Ofreces algún servicio?</h3>
-                    <p className="text-blue-100 text-sm mb-4">Crea tu perfil de trabajador, sube tu CV y empieza a ganar dinero con tus habilidades.</p>
-                    <button 
-                        onClick={() => onNavigate('ONBOARDING_PROVIDER')}
-                        className="bg-white text-blue-600 px-4 py-2 rounded-lg font-bold text-sm shadow-lg"
-                    >
-                        Crear Perfil de Trabajador
-                    </button>
-                </div>
-            </div>
-
-            <div className="space-y-2">
-                {[
-                    { icon: CreditCard, label: "Métodos de Pago", action: () => alert("Gestión de tarjetas") },
-                    { icon: HelpCircle, label: "Centro de Ayuda y Quejas", action: () => onNavigate('HELP') },
-                    { icon: ShieldCheck, label: "Términos de Uso", action: () => onNavigate('TERMS') },
-                ].map((item, i) => (
-                    <button key={i} onClick={item.action} className="w-full flex items-center justify-between p-4 bg-white rounded-2xl border border-gray-100 hover:border-blue-200 transition-colors shadow-sm">
-                        <div className="flex items-center gap-3">
-                            <item.icon size={20} className="text-gray-900" />
-                            <span className="font-medium text-gray-900">{item.label}</span>
+            <div className="grid lg:grid-cols-3 gap-8">
+                {/* Left Column: User Card & Points */}
+                <div className="lg:col-span-1 space-y-6">
+                     <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm text-center">
+                        <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-lg flex items-center justify-center overflow-hidden mx-auto mb-4 relative group">
+                            {profile.image ? <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" /> : <User size={40} className="text-gray-400" />}
+                            <button onClick={handleEditOpen} className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center text-white text-xs font-bold">Cambiar</button>
                         </div>
-                        <ChevronRight size={20} className="text-gray-400" />
-                    </button>
-                ))}
-                
-                {/* Admin Button */}
-                 <button onClick={() => onNavigate('ADMIN')} className="w-full flex items-center justify-between p-4 bg-gray-900 rounded-2xl text-white hover:bg-black transition-colors shadow-sm mt-4">
-                    <div className="flex items-center gap-3">
-                        <span className="font-medium">Panel Administrador</span>
+                        <h2 className="text-xl font-bold text-gray-900">{profile.name}</h2>
+                        <p className="text-gray-500 text-sm mb-4">{profile.email || 'Agrega tu correo'}</p>
+                        <button onClick={handleEditOpen} className="text-blue-600 font-bold text-sm bg-blue-50 px-4 py-2 rounded-lg hover:bg-blue-100 transition-colors">Editar Perfil</button>
                     </div>
-                    <ChevronRight size={20} className="text-gray-500" />
-                </button>
+
+                    <div className="bg-gray-900 rounded-[32px] p-8 relative overflow-hidden shadow-xl shadow-gray-300">
+                        <div className="relative z-10">
+                            <p className="text-gray-400 text-[10px] font-bold tracking-wider mb-2">MIS PUNTOS</p>
+                            <p className="text-white text-6xl font-black tracking-tight">{profile.loyaltyPoints || 0}</p>
+                            <p className="text-gray-400 text-xs mt-4 border-t border-gray-700 pt-4">1 Punto = 1 Bs para futuros pagos.</p>
+                        </div>
+                        <div className="absolute -right-6 -bottom-6 opacity-10 text-white">
+                            <Star size={180} />
+                        </div>
+                        <button onClick={() => setShowSimModal(true)} className="absolute top-6 right-6 p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors" title="Simular Puntos">
+                            <Calculator size={18} className="text-white" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Right Column: Menu & Promo */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="bg-gradient-to-r from-blue-600 to-blue-500 rounded-[32px] p-8 text-white relative overflow-hidden shadow-lg shadow-blue-200">
+                        <div className="relative z-10 max-w-lg">
+                            <h3 className="font-bold text-2xl mb-2">¿Ofreces algún servicio?</h3>
+                            <p className="text-blue-100 text-sm mb-6 leading-relaxed">Únete a nuestra comunidad de profesionales. Crea tu perfil, verifica tus documentos y empieza a recibir solicitudes hoy mismo.</p>
+                            <button 
+                                onClick={() => onNavigate('ONBOARDING_PROVIDER')}
+                                className="bg-white text-blue-600 px-6 py-3 rounded-xl font-bold text-sm shadow-md hover:scale-105 transition-transform"
+                            >
+                                Crear Perfil de Trabajador
+                            </button>
+                        </div>
+                        <Briefcase className="absolute -right-8 -bottom-8 text-blue-400 opacity-30" size={200} />
+                    </div>
+
+                    <div className="grid sm:grid-cols-2 gap-4">
+                        {[
+                            { icon: CreditCard, label: "Métodos de Pago", action: () => alert("Gestión de tarjetas") },
+                            { icon: HelpCircle, label: "Centro de Ayuda", action: () => onNavigate('HELP') },
+                            { icon: ShieldCheck, label: "Términos y Privacidad", action: () => onNavigate('TERMS') },
+                            { icon: Mail, label: "Soporte", action: () => alert("Soporte") },
+                        ].map((item, i) => (
+                            <button key={i} onClick={item.action} className="flex items-center justify-between p-5 bg-white rounded-2xl border border-gray-100 hover:border-blue-300 hover:shadow-md transition-all group">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-gray-50 rounded-lg group-hover:bg-blue-50 transition-colors">
+                                        <item.icon size={20} className="text-gray-900 group-hover:text-blue-600" />
+                                    </div>
+                                    <span className="font-bold text-gray-900">{item.label}</span>
+                                </div>
+                            </button>
+                        ))}
+                    </div>
+                    
+                    {/* Admin Button - ONLY VISIBLE TO THE SPECIFIC ADMIN EMAIL */}
+                    {isAdmin && (
+                        <button onClick={() => onNavigate('ADMIN')} className="w-full flex items-center justify-between p-5 bg-gray-900 rounded-2xl text-white hover:bg-black border border-gray-900 transition-all shadow-xl shadow-gray-200">
+                            <div className="flex items-center gap-3">
+                                <div className="p-2 bg-white/10 rounded-lg"><User size={20} className="text-white" /></div>
+                                <span className="font-bold">Panel Administrador</span>
+                            </div>
+                            <ChevronRight size={20} className="text-gray-400" />
+                        </button>
+                    )}
+                </div>
             </div>
 
             <Modal isOpen={showSimModal} onClose={() => setShowSimModal(false)} title="Simular Puntos">
-                <div className="flex flex-col items-center">
+                {/* Simulator Content (Same as above) */}
+                 <div className="flex flex-col items-center">
                     <Calculator size={48} className="text-emerald-500 mb-4" />
                     <p className="text-center text-gray-500 mb-6">Gana 1 punto por cada 10 Bs gastados.</p>
                     <div className="w-full bg-gray-100 rounded-2xl p-4 mb-6">
@@ -417,6 +526,39 @@ export const ClientProfileView: React.FC<{ profile: UserData, onNavigate: (v: Vi
                         </div>
                     )}
                     <Button fullWidth onClick={() => setShowSimModal(false)}>Entendido</Button>
+                </div>
+            </Modal>
+
+            {/* EDIT PROFILE MODAL */}
+            <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Editar Perfil">
+                <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
+                    <div className="flex flex-col items-center mb-4">
+                         <div className="w-24 h-24 rounded-full bg-gray-100 mb-4 overflow-hidden border-2 border-gray-200">
+                             {editData.image ? <img src={editData.image} className="w-full h-full object-cover" /> : <User className="w-full h-full p-4 text-gray-300"/>}
+                         </div>
+                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Seleccionar Avatar</p>
+                         <div className="grid grid-cols-5 gap-2 w-full">
+                             {AVATARS.slice(0, 10).map((av, i) => (
+                                 <button key={i} onClick={() => setEditData({...editData, image: av})} className={`w-10 h-10 rounded-full overflow-hidden border-2 transition-all ${editData.image === av ? 'border-blue-500 scale-110' : 'border-transparent hover:border-gray-300'}`}>
+                                     <img src={av} className="w-full h-full object-cover" />
+                                 </button>
+                             ))}
+                         </div>
+                    </div>
+
+                    <Input label="Nombre Completo" value={editData.name || ''} onChange={e => setEditData({...editData, name: e.target.value})} icon={User} />
+                    <Input label="Email" value={editData.email || ''} onChange={e => setEditData({...editData, email: e.target.value})} icon={Mail} />
+                    <Input label="Teléfono" value={editData.phone || ''} onChange={e => setEditData({...editData, phone: e.target.value})} icon={Phone} />
+                    <Input label="Ubicación" value={editData.location || ''} onChange={e => setEditData({...editData, location: e.target.value})} icon={MapPin} />
+                    
+                    {profile.bio && (
+                        <TextArea label="Bio (Sobre tí)" value={editData.bio || ''} onChange={e => setEditData({...editData, bio: e.target.value})} />
+                    )}
+
+                    <div className="pt-4 flex gap-3">
+                        <Button fullWidth variant="outline" onClick={() => setShowEditModal(false)}>Cancelar</Button>
+                        <Button fullWidth onClick={handleSaveProfile}>Guardar Cambios</Button>
+                    </div>
                 </div>
             </Modal>
         </div>
@@ -473,7 +615,7 @@ export const TermsContent = () => (
 
 export const TermsView: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     return (
-        <div className="pb-24 w-full h-full flex flex-col bg-white">
+        <div className="pb-24 w-full h-full flex flex-col bg-white max-w-4xl mx-auto">
             <div className="p-6 border-b border-gray-100 flex items-center gap-4 bg-white sticky top-0 z-10">
                 <button onClick={onBack} className="p-2 hover:bg-gray-100 rounded-full">
                     <ArrowLeft size={24} />

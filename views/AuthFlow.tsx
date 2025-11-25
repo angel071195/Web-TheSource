@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Phone, ArrowRight, User, MapPin, Camera, Check, ChevronLeft, Upload, Briefcase, Mail, FileText, Crosshair, Loader2 } from 'lucide-react';
-import { Button, Input, TextArea, Modal } from '../components/UIComponents';
+import { Button, Input, TextArea, Modal, VerificationCard, LoadingButton } from '../components/UIComponents';
 import { CATEGORIES, PRICING_UNITS, BANKS_BOLIVIA, WALLETS_BOLIVIA, COLORS, AVATARS } from '../constants';
 import { UserData, Tariff, PaymentMethod } from '../types';
 import { TermsContent } from './ClientFlow';
@@ -68,8 +68,6 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          // In a real app, we would use a Geocoding API here with the lat/lng.
-          // For this simulation, we will simulate a successful find near the user's probable area.
           setTimeout(() => {
             setTempData({...tempData, location: "Puerto Quijarro, Santa Cruz"});
             setIsLocating(false);
@@ -90,15 +88,15 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
 
   if (step === 'LANDING') {
     return (
-      <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-gray-300 relative overflow-hidden">
-        {/* Abstract Background Shapes for Depth */}
-        <div className="absolute top-[-50px] left-[-50px] w-64 h-64 bg-blue-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute top-[-50px] right-[-50px] w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+      <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-gray-300 relative overflow-hidden items-center justify-center">
+        {/* Abstract Background Shapes for Depth - Now larger for desktop */}
+        <div className="absolute top-[-50px] left-[-50px] w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob"></div>
+        <div className="absolute bottom-[-50px] right-[-50px] w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob animation-delay-2000"></div>
         
-        <div className="flex-1 flex flex-col justify-center items-center p-6 relative z-10">
+        <div className="w-full max-w-sm p-6 relative z-10">
           
           {/* 3D Card Container */}
-          <div className="bg-white/80 backdrop-blur-xl w-full max-w-sm rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] border border-white/50 p-8 flex flex-col items-center">
+          <div className="bg-white/80 backdrop-blur-xl w-full rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] border border-white/50 p-8 flex flex-col items-center">
             
             {/* Logo with Shadow */}
             <div className="relative mb-8 group cursor-pointer">
@@ -167,55 +165,57 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
 
   if (step === 'DETAILS') {
     return (
-      <div className="flex flex-col min-h-screen bg-white p-6 pt-12 items-center max-w-md mx-auto w-full animate-in fade-in slide-in-from-right duration-300">
-         <div className="mb-8 flex flex-col items-center text-center">
-             <h2 className="text-2xl font-bold text-gray-900">¡Bienvenido!</h2>
-             <p className="text-gray-500 mt-2">Verificaremos tu perfil en unos segundos.</p>
-         </div>
-         <div className="w-full space-y-4">
-           <Input label="¿Cuál es tu nombre?" value={tempData.name} onChange={(e) => setTempData({...tempData, name: e.target.value})} placeholder="Nombre completo" icon={User} />
-           <Input label="Correo Electrónico" value={tempData.email} onChange={(e) => setTempData({...tempData, email: e.target.value})} placeholder="ejemplo@correo.com" type="email" icon={Mail} />
-           
-           {/* Smart Location Input */}
-           <div className="relative mb-4 w-full">
-             <label className="block text-sm font-semibold text-gray-900 mb-2">¿Dónde te ubicas?</label>
-             <div className="relative">
-               <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                 <MapPin size={20} />
-               </div>
-               <input 
-                 className="w-full bg-white border border-gray-200 text-gray-900 text-base rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none py-3.5 pl-12 pr-12 placeholder:text-gray-400 transition-all"
-                 placeholder="Escribe tu ciudad o barrio..."
-                 value={tempData.location}
-                 onChange={handleLocationChange}
-               />
-               <button 
-                  onClick={handleGPSLocation}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 rounded-xl transition-colors"
-                  title="Usar GPS"
-               >
-                  {isLocating ? <Loader2 size={18} className="animate-spin" /> : <Crosshair size={18} />}
-               </button>
-             </div>
+      <div className="flex flex-col min-h-screen bg-white p-6 pt-12 items-center justify-center animate-in fade-in slide-in-from-right duration-300">
+         <div className="w-full max-w-md">
+            <div className="mb-8 flex flex-col items-center text-center">
+                <h2 className="text-2xl font-bold text-gray-900">¡Bienvenido!</h2>
+                <p className="text-gray-500 mt-2">Verificaremos tu perfil en unos segundos.</p>
+            </div>
+            <div className="space-y-4">
+              <Input label="¿Cuál es tu nombre?" value={tempData.name} onChange={(e) => setTempData({...tempData, name: e.target.value})} placeholder="Nombre completo" icon={User} />
+              <Input label="Correo Electrónico" value={tempData.email} onChange={(e) => setTempData({...tempData, email: e.target.value})} placeholder="ejemplo@correo.com" type="email" icon={Mail} />
+              
+              {/* Smart Location Input */}
+              <div className="relative mb-4 w-full">
+                <label className="block text-sm font-semibold text-gray-900 mb-2">¿Dónde te ubicas?</label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    <MapPin size={20} />
+                  </div>
+                  <input 
+                    className="w-full bg-white border border-gray-200 text-gray-900 text-base rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none py-3.5 pl-12 pr-12 placeholder:text-gray-400 transition-all"
+                    placeholder="Escribe tu ciudad o barrio..."
+                    value={tempData.location}
+                    onChange={handleLocationChange}
+                  />
+                  <button 
+                      onClick={handleGPSLocation}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 rounded-xl transition-colors"
+                      title="Usar GPS"
+                  >
+                      {isLocating ? <Loader2 size={18} className="animate-spin" /> : <Crosshair size={18} />}
+                  </button>
+                </div>
 
-             {/* Autocomplete Dropdown */}
-             {suggestions.length > 0 && (
-               <div className="absolute z-50 w-full bg-white border border-gray-100 rounded-xl shadow-xl mt-2 max-h-40 overflow-y-auto animate-in fade-in zoom-in duration-200">
-                 {suggestions.map((city, idx) => (
-                   <button
-                     key={idx}
-                     onClick={() => selectSuggestion(city)}
-                     className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 font-medium flex items-center gap-2 border-b border-gray-50 last:border-0"
-                   >
-                     <MapPin size={14} className="text-gray-400" />
-                     {city}
-                   </button>
-                 ))}
-               </div>
-             )}
-           </div>
+                {/* Autocomplete Dropdown */}
+                {suggestions.length > 0 && (
+                  <div className="absolute z-50 w-full bg-white border border-gray-100 rounded-xl shadow-xl mt-2 max-h-40 overflow-y-auto animate-in fade-in zoom-in duration-200">
+                    {suggestions.map((city, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => selectSuggestion(city)}
+                        className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 font-medium flex items-center gap-2 border-b border-gray-50 last:border-0"
+                      >
+                        <MapPin size={14} className="text-gray-400" />
+                        {city}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-           <Button fullWidth onClick={() => setStep('PHOTO')} disabled={!tempData.name || !tempData.location}>Continuar</Button>
+              <Button fullWidth onClick={() => setStep('PHOTO')} disabled={!tempData.name || !tempData.location}>Continuar</Button>
+            </div>
          </div>
       </div>
     );
@@ -223,30 +223,32 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
 
   if (step === 'PHOTO') {
     return (
-      <div className="flex flex-col min-h-screen bg-white p-6 pt-12 items-center max-w-md mx-auto w-full animate-in fade-in slide-in-from-right duration-300">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Casi listo!</h2>
-          <p className="text-gray-500 mb-6 text-center text-sm">Sube una foto o elige un personaje.</p>
-          
-          <button className="w-24 h-24 rounded-full bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center mb-6 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all text-gray-400">
-              <Camera size={28} />
-          </button>
+      <div className="flex flex-col min-h-screen bg-white p-6 pt-12 items-center justify-center animate-in fade-in slide-in-from-right duration-300">
+          <div className="w-full max-w-md flex flex-col items-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Casi listo!</h2>
+            <p className="text-gray-500 mb-6 text-center text-sm">Sube una foto o elige un personaje.</p>
+            
+            <button className="w-24 h-24 rounded-full bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center mb-6 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all text-gray-400">
+                <Camera size={28} />
+            </button>
 
-          <p className="text-[10px] font-bold text-gray-400 mb-4 uppercase tracking-widest">O SELECCIONA UN AVATAR</p>
-          
-          <div className="grid grid-cols-4 gap-3 w-full mb-8">
-              {AVATARS.map((avatar, i) => (
-                  <button 
-                    key={i}
-                    onClick={() => setTempData({...tempData, image: avatar})}
-                    className={`aspect-square rounded-2xl overflow-hidden border-2 transition-all shadow-sm ${tempData.image === avatar ? 'border-blue-600 ring-2 ring-blue-100 scale-105' : 'border-gray-100 hover:border-gray-300'}`}
-                  >
-                      <img src={avatar} alt={`Avatar ${i}`} className="w-full h-full object-cover" />
-                  </button>
-              ))}
-          </div>
+            <p className="text-[10px] font-bold text-gray-400 mb-4 uppercase tracking-widest">O SELECCIONA UN AVATAR</p>
+            
+            <div className="grid grid-cols-4 gap-3 w-full mb-8">
+                {AVATARS.map((avatar, i) => (
+                    <button 
+                      key={i}
+                      onClick={() => setTempData({...tempData, image: avatar})}
+                      className={`aspect-square rounded-2xl overflow-hidden border-2 transition-all shadow-sm ${tempData.image === avatar ? 'border-blue-600 ring-2 ring-blue-100 scale-105' : 'border-gray-100 hover:border-gray-300'}`}
+                    >
+                        <img src={avatar} alt={`Avatar ${i}`} className="w-full h-full object-cover" />
+                    </button>
+                ))}
+            </div>
 
-          <div className="w-full mt-auto">
-            <Button fullWidth onClick={() => onLogin('CLIENT', tempData)}>Finalizar Registro</Button>
+            <div className="w-full mt-auto">
+              <Button fullWidth onClick={() => onLogin('CLIENT', tempData)}>Finalizar Registro</Button>
+            </div>
           </div>
       </div>
     );
@@ -271,6 +273,7 @@ export const ProviderOnboarding: React.FC<{
   const [newTariff, setNewTariff] = useState<Tariff>({service: '', price: '', unit: 'fixed'});
   const [tempPayment, setTempPayment] = useState<{type: 'BANK' | 'WALLET', entity: string, number: string}>({ type: 'WALLET', entity: '', number: '' });
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [submitStage, setSubmitStage] = useState<'IDLE' | 'ENCRYPTING' | 'UPLOADING' | 'FINALIZING'>('IDLE');
   
   // Upload States
   const [uploadingIdFront, setUploadingIdFront] = useState(false);
@@ -370,8 +373,26 @@ export const ProviderOnboarding: React.FC<{
       }
   };
 
+  const handleSmartSubmit = async () => {
+    // Stage 1: Encrypting
+    setSubmitStage('ENCRYPTING');
+    await new Promise(r => setTimeout(r, 1500));
+    
+    // Stage 2: Uploading
+    setSubmitStage('UPLOADING');
+    await new Promise(r => setTimeout(r, 2000));
+    
+    // Stage 3: Finalizing
+    setSubmitStage('FINALIZING');
+    await new Promise(r => setTimeout(r, 1000));
+
+    // Complete
+    onComplete(formData);
+  };
+
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50 max-w-md mx-auto w-full relative">
+    <div className="flex flex-col min-h-screen bg-gray-50 w-full relative">
+      <div className="w-full max-w-2xl mx-auto bg-white min-h-screen shadow-sm flex flex-col">
        {/* Header */}
        <div className="px-6 pt-6 pb-2 flex items-center justify-between bg-white sticky top-0 z-10 shadow-sm">
           <button onClick={step === 1 ? onCancel : () => setStep(step - 1)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
@@ -617,20 +638,38 @@ export const ProviderOnboarding: React.FC<{
           )}
        </div>
 
-       <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100">
-          <Button fullWidth onClick={step === 4 ? () => onComplete(formData) : () => setStep(step + 1)} disabled={step === 4 && !formData.acceptedTerms}>
-             {step === 4 ? 'Finalizar Registro' : 'Continuar'}
-          </Button>
+       <div className="absolute bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 rounded-b-none lg:rounded-b-[32px]">
+          {step === 4 ? (
+             <LoadingButton 
+                stage={submitStage} 
+                onClick={handleSmartSubmit} 
+                disabled={!formData.acceptedTerms} 
+             />
+          ) : (
+            <Button fullWidth onClick={() => setStep(step + 1)}>
+              Continuar
+            </Button>
+          )}
        </div>
 
        <Modal isOpen={showBonusModal} onClose={onCloseBonus}>
            <div className="flex flex-col items-center text-center">
               <SparklesIcon />
               <h2 className="text-2xl font-black text-gray-900 mt-4">¡FELICIDADES!</h2>
-              <p className="text-gray-500 mt-2 mb-6">Eres de los primeros 100 trabajadores. Tienes un bono inicial.</p>
-              <div className="bg-gray-900 rounded-2xl p-6 w-full mb-6">
-                  <p className="text-gray-400 text-xs font-bold tracking-wider mb-1">SALDO DISPONIBLE</p>
-                  <p className="text-4xl font-black text-yellow-400">Bs. {bonusAmount}</p>
+              <p className="text-gray-500 mt-2 mb-6">Eres miembro verificado de The Source.</p>
+              
+              {/* NEW VERIFICATION CARD DISPLAY */}
+              <div className="w-full mb-6">
+                 <VerificationCard 
+                    name={formData.name || "Usuario Nuevo"} 
+                    profession={formData.professions?.[0] || "Profesional"} 
+                    image={formData.image || AVATARS[0]}
+                 />
+              </div>
+
+              <div className="bg-gray-100 rounded-2xl p-4 w-full mb-4">
+                  <p className="text-gray-400 text-xs font-bold tracking-wider mb-1">BONO INICIAL</p>
+                  <p className="text-3xl font-black text-yellow-500">Bs. {bonusAmount}</p>
               </div>
               <Button fullWidth onClick={onCloseBonus}>Ir a mi Panel</Button>
            </div>
@@ -642,6 +681,7 @@ export const ProviderOnboarding: React.FC<{
            </div>
            <Button fullWidth onClick={() => setShowTermsModal(false)} className="mt-4">Cerrar</Button>
        </Modal>
+       </div>
     </div>
   );
 };
