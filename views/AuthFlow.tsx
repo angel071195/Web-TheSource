@@ -1,10 +1,12 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Phone, ArrowRight, User, MapPin, Camera, Check, ChevronLeft, Upload, Briefcase, Mail, FileText, Crosshair, Loader2 } from 'lucide-react';
 import { Button, Input, TextArea, Modal } from '../components/UIComponents';
 import { CATEGORIES, PRICING_UNITS, BANKS_BOLIVIA, WALLETS_BOLIVIA, COLORS, AVATARS } from '../constants';
 import { UserData, Tariff, PaymentMethod } from '../types';
 import { TermsContent } from './ClientFlow';
+import { storage } from '../firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface LoginProps {
   onLogin: (type: 'CLIENT' | 'PROVIDER', initialData?: Partial<UserData>) => void;
@@ -269,6 +271,18 @@ export const ProviderOnboarding: React.FC<{
   const [newTariff, setNewTariff] = useState<Tariff>({service: '', price: '', unit: 'fixed'});
   const [tempPayment, setTempPayment] = useState<{type: 'BANK' | 'WALLET', entity: string, number: string}>({ type: 'WALLET', entity: '', number: '' });
   const [showTermsModal, setShowTermsModal] = useState(false);
+  
+  // Upload States
+  const [uploadingIdFront, setUploadingIdFront] = useState(false);
+  const [uploadingIdBack, setUploadingIdBack] = useState(false);
+  const [uploadingCV, setUploadingCV] = useState(false);
+  const [uploadingQR, setUploadingQR] = useState(false);
+  const [qrUrl, setQrUrl] = useState<string>("");
+
+  const idFrontInputRef = useRef<HTMLInputElement>(null);
+  const idBackInputRef = useRef<HTMLInputElement>(null);
+  const cvInputRef = useRef<HTMLInputElement>(null);
+  const qrInputRef = useRef<HTMLInputElement>(null);
 
   const toggleProfession = (label: string) => {
     const current = formData.professions || [];
@@ -292,10 +306,67 @@ export const ProviderOnboarding: React.FC<{
               id: Math.random().toString(),
               type: tempPayment.type,
               title: tempPayment.entity,
-              details: tempPayment.number
+              details: tempPayment.number,
+              qrImage: qrUrl
           };
           setFormData({ ...formData, paymentMethods: [...(formData.paymentMethods || []), newMethod] });
           setTempPayment({ type: 'WALLET', entity: '', number: '' });
+          setQrUrl(""); // Reset QR for next method
+      }
+  };
+
+  const uploadImageToFirebase = async (file: File, path: string): Promise<string> => {
+    try {
+      const storageRef = ref(storage, path);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      return downloadURL;
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      alert("Error al subir la imagen. Inténtalo de nuevo.");
+      throw error;
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>, type: 'ID_FRONT' | 'ID_BACK' | 'CV' | 'QR') => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const uniqueName = `${Date.now()}_${file.name}`;
+
+      if (type === 'ID_FRONT') {
+          setUploadingIdFront(true);
+          try {
+              const url = await uploadImageToFirebase(file, `documents/id_front/${uniqueName}`);
+              setFormData(prev => ({ ...prev, idFront: url }));
+          } finally {
+              setUploadingIdFront(false);
+          }
+      } else if (type === 'ID_BACK') {
+          setUploadingIdBack(true);
+          try {
+              const url = await uploadImageToFirebase(file, `documents/id_back/${uniqueName}`);
+              setFormData(prev => ({ ...prev, idBack: url }));
+          } finally {
+              setUploadingIdBack(false);
+          }
+      } else if (type === 'CV') {
+          setUploadingCV(true);
+          try {
+              const url = await uploadImageToFirebase(file, `documents/cv/${uniqueName}`);
+              setFormData(prev => ({ ...prev, cv: url }));
+          } finally {
+              setUploadingCV(false);
+          }
+      } else if (type === 'QR') {
+          setUploadingQR(true);
+          try {
+              const url = await uploadImageToFirebase(file, `payments/qr/${uniqueName}`);
+              setQrUrl(url);
+              alert("QR subido correctamente. Ahora puedes agregar el método de pago.");
+          } finally {
+              setUploadingQR(false);
+          }
       }
   };
 
@@ -421,31 +492,39 @@ export const ProviderOnboarding: React.FC<{
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Verificación</h2>
                 <p className="text-gray-500 mb-6">Documentos para generar confianza.</p>
                 
+                {/* Hidden Inputs */}
+                <input type="file" ref={idFrontInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'ID_FRONT')} />
+                <input type="file" ref={idBackInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'ID_BACK')} />
+                <input type="file" ref={cvInputRef} className="hidden" accept=".pdf,image/*" onChange={(e) => handleFileChange(e, 'CV')} />
+
                 <p className="font-bold text-sm mb-2">Carnet de Identidad (Obligatorio)</p>
                 <div className="flex gap-4 mb-6">
                    <button 
-                     onClick={() => setFormData({...formData, idFront: 'uploaded'})}
+                     onClick={() => idFrontInputRef.current?.click()}
+                     disabled={uploadingIdFront}
                      className={`flex-1 h-24 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-colors ${formData.idFront ? 'bg-green-50 border-green-400 text-green-600' : 'bg-gray-50 border-gray-300 text-gray-400'}`}
                    >
-                      <Camera size={24} className="mb-2" />
-                      <span className="text-xs font-bold">{formData.idFront ? 'Cargado' : 'Anverso'}</span>
+                      {uploadingIdFront ? <Loader2 className="animate-spin" size={24} /> : <Camera size={24} className="mb-2" />}
+                      <span className="text-xs font-bold">{uploadingIdFront ? 'Subiendo...' : formData.idFront ? 'Cargado' : 'Anverso'}</span>
                    </button>
                    <button 
-                     onClick={() => setFormData({...formData, idBack: 'uploaded'})}
+                     onClick={() => idBackInputRef.current?.click()}
+                     disabled={uploadingIdBack}
                      className={`flex-1 h-24 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-colors ${formData.idBack ? 'bg-green-50 border-green-400 text-green-600' : 'bg-gray-50 border-gray-300 text-gray-400'}`}
                    >
-                      <Camera size={24} className="mb-2" />
-                      <span className="text-xs font-bold">{formData.idBack ? 'Cargado' : 'Reverso'}</span>
+                      {uploadingIdBack ? <Loader2 className="animate-spin" size={24} /> : <Camera size={24} className="mb-2" />}
+                      <span className="text-xs font-bold">{uploadingIdBack ? 'Subiendo...' : formData.idBack ? 'Cargado' : 'Reverso'}</span>
                    </button>
                 </div>
                 
                 <h3 className="font-bold text-gray-900 text-sm mb-2">Currículum / Certificado (Opcional)</h3>
                 <button 
-                    onClick={() => setFormData({...formData, cv: 'uploaded'})}
+                    onClick={() => cvInputRef.current?.click()}
+                    disabled={uploadingCV}
                     className="w-full h-16 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50 flex items-center justify-center gap-3 text-purple-600 font-bold hover:bg-purple-100 transition-colors mb-6"
                 >
-                    <FileText size={24} />
-                    {formData.cv ? 'Documento Subido' : 'Subir Documento (PDF/Foto)'}
+                    {uploadingCV ? <Loader2 className="animate-spin" size={24} /> : <FileText size={24} />}
+                    {uploadingCV ? 'Subiendo...' : formData.cv ? 'Documento Subido' : 'Subir Documento (PDF/Foto)'}
                 </button>
 
                 <label className="flex items-center gap-3 p-4 bg-white rounded-2xl border border-gray-200">
@@ -460,12 +539,16 @@ export const ProviderOnboarding: React.FC<{
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Métodos de Cobro</h2>
                 <p className="text-gray-500 mb-6">¿Cómo te pagarán los clientes?</p>
                 
+                {/* Hidden Input for QR */}
+                <input type="file" ref={qrInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'QR')} />
+
                 {/* Payment Methods List */}
                 {formData.paymentMethods?.map((pm, i) => (
                     <div key={i} className="bg-gray-100 p-3 rounded-xl mb-2 flex justify-between items-center">
                         <div>
                             <p className="font-bold text-xs">{pm.title}</p>
                             <p className="text-xs text-gray-500">{pm.details}</p>
+                            {pm.qrImage && <span className="text-[10px] text-green-600 font-bold">QR Adjunto</span>}
                         </div>
                         <Check size={16} className="text-green-500"/>
                     </div>
@@ -504,8 +587,13 @@ export const ProviderOnboarding: React.FC<{
                             value={tempPayment.number} 
                             onChange={(e) => setTempPayment({...tempPayment, number: e.target.value})} 
                         />
-                        <button className="w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-gray-400 text-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors">
-                            <Upload size={16}/> Subir Imagen QR (Opcional)
+                        <button 
+                            onClick={() => qrInputRef.current?.click()}
+                            disabled={uploadingQR}
+                            className={`w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors ${qrUrl ? 'text-green-600 bg-green-50 border-green-300' : 'text-gray-400'}`}
+                        >
+                            {uploadingQR ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16}/>} 
+                            {uploadingQR ? 'Subiendo QR...' : qrUrl ? 'QR Cargado Exitosamente' : 'Subir Imagen QR (Opcional)'}
                         </button>
                         <Button variant="secondary" fullWidth onClick={addPaymentMethod} disabled={!tempPayment.entity || !tempPayment.number}>
                             Agregar Método
