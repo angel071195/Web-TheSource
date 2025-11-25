@@ -282,6 +282,10 @@ const App: React.FC = () => {
 
   const showNav = !['LOGIN', 'ONBOARDING_PROVIDER', 'JOB_CLOSING', 'ADMIN', 'PROFILE_DETAIL', 'LEAD_DETAIL', 'TERMS'].includes(currentView);
 
+  // ... código anterior ...
+
+  const showNav = !['LOGIN', 'ONBOARDING_PROVIDER', 'JOB_CLOSING', 'ADMIN', 'PROFILE_DETAIL', 'LEAD_DETAIL', 'TERMS'].includes(currentView);
+
   return (
     // CAMBIO AQUÍ: Quitamos el bg-gray-200 y el flex center. Ahora es full height.
     // max-w-md mx-auto mantiene el diseño bonito en PC (como Instagram web) pero llena el celular.
