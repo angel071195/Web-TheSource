@@ -278,15 +278,24 @@ const App: React.FC = () => {
 
   const showNav = !['LOGIN', 'ONBOARDING_PROVIDER', 'JOB_CLOSING', 'ADMIN', 'PROFILE_DETAIL', 'LEAD_DETAIL', 'TERMS'].includes(currentView);
 
+  // ... código anterior ...
+
+  const showNav = !['LOGIN', 'ONBOARDING_PROVIDER', 'JOB_CLOSING', 'ADMIN', 'PROFILE_DETAIL', 'LEAD_DETAIL', 'TERMS'].includes(currentView);
+
   return (
-    <div className="bg-gray-200 min-h-screen flex justify-center items-center p-4 font-sans overflow-hidden">
-      <div className="w-[360px] h-[640px] bg-white relative shadow-2xl rounded-[30px] overflow-hidden flex flex-col border-[8px] border-gray-900 ring-4 ring-gray-300 shrink-0">
-        <div className="flex-1 overflow-y-auto no-scrollbar relative bg-white">
+    // CAMBIO AQUÍ: Quitamos el bg-gray-200 y el flex center. Ahora es full height.
+    // max-w-md mx-auto mantiene el diseño bonito en PC (como Instagram web) pero llena el celular.
+    <div className="min-h-screen bg-white font-sans text-gray-900">
+      <div className="max-w-md mx-auto bg-white min-h-screen relative shadow-xl flex flex-col">
+        
+        {/* Área de Contenido con Scroll */}
+        <div className="flex-1 overflow-y-auto pb-20 no-scrollbar">
           {renderContent()}
         </div>
         
+        {/* Barra de Navegación Fija Abajo */}
         {showNav && (
-           <div className="bg-white border-t border-gray-100 px-3 py-2 flex justify-between items-center text-[10px] font-medium text-gray-400 sticky bottom-0 z-20">
+           <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 py-3 flex justify-around items-center z-50 max-w-md mx-auto shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
               {userType === 'CLIENT' || currentView === 'HOME' ? (
                 <>
                   <NavBtn active={currentView === 'HOME'} icon={Home} label="Inicio" onClick={() => navigateTo('HOME')} />
@@ -309,6 +318,7 @@ const App: React.FC = () => {
   );
 };
 
+// ... resto del código (NavBtn y export default)
 const NavBtn: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
   <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors min-w-[50px] py-1 ${active ? 'text-blue-600' : 'hover:text-gray-600'}`}>
     <Icon size={22} strokeWidth={active ? 2.5 : 2} />
