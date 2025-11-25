@@ -35,6 +35,14 @@ export interface PaymentMethod {
   qrImage?: string;
 }
 
+export interface UserDocument {
+  id: string;
+  name: string;
+  url: string;
+  date: string;
+  type: 'CV' | 'CERTIFICATE' | 'OTHER';
+}
+
 export interface Provider {
   id: string;
   name: string;
@@ -72,6 +80,7 @@ export interface UserData {
   idFront?: string | null;
   idBack?: string | null;
   cv?: string | null;
+  documents?: UserDocument[]; // Added documents array
   paymentMethods?: PaymentMethod[];
   acceptedTerms?: boolean;
   issuesInvoice?: boolean;
@@ -104,7 +113,7 @@ export interface JobPost {
 export interface AdminData {
   pendingRecharges: {
       id: string; 
-      workerName: string; // Added workerName
+      workerName: string; 
       amount: number; 
       date: string; 
       status: string; 

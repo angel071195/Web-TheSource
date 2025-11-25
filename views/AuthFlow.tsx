@@ -1,15 +1,17 @@
 
-import React, { useState, useRef } from 'react';
-import { Phone, ArrowRight, User, MapPin, Camera, Check, ChevronLeft, Upload, Briefcase, Mail, FileText, Crosshair, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Phone, ArrowRight, User, MapPin, Camera, Check, ChevronLeft, Upload, Briefcase, Mail, FileText, Crosshair, Loader2, Plus, Navigation, Map } from 'lucide-react';
 import { Button, Input, TextArea, Modal, VerificationCard, LoadingButton } from '../components/UIComponents';
-import { CATEGORIES, PRICING_UNITS, BANKS_BOLIVIA, WALLETS_BOLIVIA, COLORS, AVATARS } from '../constants';
+import { CATEGORIES, PRICING_UNITS, BANKS_BOLIVIA, WALLETS_BOLIVIA, COLORS } from '../constants';
 import { UserData, Tariff, PaymentMethod } from '../types';
 import { TermsContent } from './ClientFlow';
-import { storage } from '../firebaseConfig';
+import { storage, db } from '../firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { collection, query, where, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
 
 interface LoginProps {
   onLogin: (type: 'CLIENT' | 'PROVIDER', initialData?: Partial<UserData>) => void;
+  onSocialLogin: (provider: 'google' | 'facebook') => Promise<void>;
 }
 
 // Custom Icons for aesthetic buttons
@@ -29,20 +31,23 @@ const FacebookIcon = () => (
   </svg>
 );
 
-// Simulated database of Bolivian cities for autocomplete
 const BOLIVIA_CITIES = [
   "Santa Cruz de la Sierra", "Puerto Quijarro", "Puerto Suárez", "La Paz", "El Alto", 
   "Cochabamba", "Oruro", "Sucre", "Tarija", "Potosí", "Trinidad", "Cobija", 
   "Montero", "Warnes", "Cotoca", "Yacuiba", "Riberalta", "Viacha"
 ];
 
-export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
+export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) => {
   const [step, setStep] = useState<'LANDING' | 'DETAILS' | 'PHOTO'>('LANDING');
   const [tempData, setTempData] = useState({ name: '', location: '', phone: '', email: '', image: '' });
   
   // Location States
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLocating, setIsLocating] = useState(false);
+
+  // Photo Upload State
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const handleLocationChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const text = e.target.value;
@@ -86,19 +91,37 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
     }
   };
 
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingPhoto(true);
+    try {
+      const uniqueName = `profile_photos/${Date.now()}_${file.name}`;
+      const storageRef = ref(storage, uniqueName);
+      const snapshot = await uploadBytes(storageRef, file);
+      const downloadURL = await getDownloadURL(snapshot.ref);
+      
+      setTempData({ ...tempData, image: downloadURL });
+    } catch (error) {
+      console.error("Error uploading photo:", error);
+      alert("Error al subir la foto. Inténtalo de nuevo.");
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   if (step === 'LANDING') {
     return (
       <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-gray-300 relative overflow-hidden items-center justify-center">
-        {/* Abstract Background Shapes for Depth - Now larger for desktop */}
+        {/* Abstract Background Shapes */}
         <div className="absolute top-[-50px] left-[-50px] w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob"></div>
         <div className="absolute bottom-[-50px] right-[-50px] w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob animation-delay-2000"></div>
         
         <div className="w-full max-w-sm p-6 relative z-10">
-          
           {/* 3D Card Container */}
           <div className="bg-white/80 backdrop-blur-xl w-full rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] border border-white/50 p-8 flex flex-col items-center">
-            
-            {/* Logo with Shadow */}
+            {/* Logo */}
             <div className="relative mb-8 group cursor-pointer">
               <div className="absolute inset-0 bg-black rounded-3xl blur-md opacity-30 translate-y-2 group-hover:translate-y-3 transition-transform duration-500"></div>
               <div className="w-24 h-24 bg-gray-900 rounded-3xl flex items-center justify-center relative z-10 shadow-inner border-t border-gray-700 transform group-hover:-translate-y-1 transition-transform duration-500">
@@ -110,7 +133,6 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
             <p className="text-[10px] font-bold text-blue-600 tracking-[0.3em] mb-10 uppercase bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Solutions App</p>
 
             <div className="w-full space-y-4">
-              {/* Phone Input with Depth */}
               <div className="relative group">
                 <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
                 <div className="relative bg-white rounded-2xl">
@@ -125,16 +147,20 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
                 </div>
               </div>
 
-              {/* Aesthetic Google Button */}
-              <button className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-gray-200 border border-gray-100 flex items-center justify-center gap-3 transition-transform active:scale-95">
+              <button onClick={() => onSocialLogin('google')} className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-gray-200 border border-gray-100 flex items-center justify-center gap-3 transition-transform active:scale-95">
                  <GoogleIcon />
                  <span>Continuar con Google</span>
               </button>
 
-              {/* Aesthetic Facebook Button */}
-              <button className="w-full bg-[#1877F2] hover:bg-[#166fe5] text-white font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-blue-200 flex items-center justify-center gap-3 transition-transform active:scale-95">
-                 <div className="bg-white rounded-full p-0.5"><FacebookIcon /></div>
+              <button 
+                onClick={() => onSocialLogin('facebook')} 
+                className="w-full bg-[#1877F2]/50 cursor-not-allowed text-white/80 font-bold py-3.5 px-4 rounded-2xl shadow-none border border-blue-200/50 flex items-center justify-center gap-3 transition-none relative overflow-hidden"
+              >
+                 <div className="bg-white/20 rounded-full p-0.5 opacity-60"><FacebookIcon /></div>
                  <span>Continuar con Facebook</span>
+                 <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-[8px] font-black px-2 py-1 rounded-bl-xl uppercase tracking-wider shadow-sm">
+                    Próximamente
+                 </div>
               </button>
 
               <div className="pt-4">
@@ -152,12 +178,10 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
             </div>
           </div>
 
-          {/* Legal Footer */}
           <div className="mt-8 text-center space-y-1">
              <p className="text-[10px] text-gray-500 font-medium">© 2025 THE SOURCE. Todos los derechos reservados.</p>
              <p className="text-[10px] text-gray-400">Creado por <span className="font-bold text-gray-500">Angelo Mario Villarroel De La Fuente</span></p>
           </div>
-
         </div>
       </div>
     );
@@ -169,13 +193,13 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
          <div className="w-full max-w-md">
             <div className="mb-8 flex flex-col items-center text-center">
                 <h2 className="text-2xl font-bold text-gray-900">¡Bienvenido!</h2>
-                <p className="text-gray-500 mt-2">Verificaremos tu perfil en unos segundos.</p>
+                <p className="text-blue-600 font-bold text-sm bg-blue-50 px-3 py-1 rounded-full mb-2">Creando perfil de Cliente</p>
+                <p className="text-gray-500 text-sm">Verificaremos tu perfil en unos segundos.</p>
             </div>
             <div className="space-y-4">
               <Input label="¿Cuál es tu nombre?" value={tempData.name} onChange={(e) => setTempData({...tempData, name: e.target.value})} placeholder="Nombre completo" icon={User} />
               <Input label="Correo Electrónico" value={tempData.email} onChange={(e) => setTempData({...tempData, email: e.target.value})} placeholder="ejemplo@correo.com" type="email" icon={Mail} />
               
-              {/* Smart Location Input */}
               <div className="relative mb-4 w-full">
                 <label className="block text-sm font-semibold text-gray-900 mb-2">¿Dónde te ubicas?</label>
                 <div className="relative">
@@ -196,8 +220,6 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
                       {isLocating ? <Loader2 size={18} className="animate-spin" /> : <Crosshair size={18} />}
                   </button>
                 </div>
-
-                {/* Autocomplete Dropdown */}
                 {suggestions.length > 0 && (
                   <div className="absolute z-50 w-full bg-white border border-gray-100 rounded-xl shadow-xl mt-2 max-h-40 overflow-y-auto animate-in fade-in zoom-in duration-200">
                     {suggestions.map((city, idx) => (
@@ -223,31 +245,66 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin }) => {
 
   if (step === 'PHOTO') {
     return (
-      <div className="flex flex-col min-h-screen bg-white p-6 pt-12 items-center justify-center animate-in fade-in slide-in-from-right duration-300">
-          <div className="w-full max-w-md flex flex-col items-center">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">¡Casi listo!</h2>
-            <p className="text-gray-500 mb-6 text-center text-sm">Sube una foto o elige un personaje.</p>
+      <div className="flex flex-col min-h-screen bg-gray-50 p-6 items-center justify-center animate-in fade-in zoom-in duration-500">
+          <div className="w-full max-w-sm flex flex-col items-center bg-white p-8 rounded-[40px] shadow-2xl shadow-gray-200 border border-white">
+            <h2 className="text-2xl font-black text-gray-900 mb-2">Tu Foto de Perfil</h2>
+            <p className="text-gray-400 mb-8 text-center text-sm font-medium">Personaliza tu experiencia. Es opcional.</p>
             
-            <button className="w-24 h-24 rounded-full bg-gray-50 border-2 border-dashed border-gray-300 flex items-center justify-center mb-6 hover:bg-blue-50 hover:border-blue-300 hover:text-blue-600 transition-all text-gray-400">
-                <Camera size={28} />
+            <input 
+              type="file" 
+              ref={photoInputRef} 
+              className="hidden" 
+              accept="image/*" 
+              onChange={handlePhotoSelect} 
+            />
+
+            <button 
+              onClick={() => photoInputRef.current?.click()}
+              disabled={uploadingPhoto}
+              className={`w-40 h-40 rounded-full flex flex-col items-center justify-center mb-10 transition-all duration-500 relative group shadow-2xl ${
+                tempData.image && !tempData.image.includes('dicebear')
+                  ? 'bg-white' 
+                  : 'bg-gradient-to-br from-gray-50 to-gray-100 hover:from-white hover:to-white'
+              }`}
+            >
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full opacity-20 group-hover:opacity-40 blur transition duration-500"></div>
+                
+                <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-white flex items-center justify-center bg-white">
+                  {uploadingPhoto ? (
+                      <div className="flex flex-col items-center gap-2">
+                        <Loader2 size={32} className="animate-spin text-blue-600" />
+                        <span className="text-[10px] font-bold text-blue-600">SUBIENDO</span>
+                      </div>
+                  ) : tempData.image && !tempData.image.includes('dicebear') ? (
+                      <img src={tempData.image} alt="Uploaded" className="w-full h-full object-cover" />
+                  ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-6xl shadow-inner">
+                         {tempData.name.charAt(0).toUpperCase()}
+                      </div>
+                  )}
+
+                  {!uploadingPhoto && (
+                    <div className={`absolute inset-0 bg-black/30 flex items-center justify-center transition-opacity duration-300 ${tempData.image ? 'opacity-0 group-hover:opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+                       <Camera className="text-white" size={32} />
+                    </div>
+                  )}
+                </div>
+
+                <div className="absolute bottom-2 right-2 bg-black text-white p-2 rounded-full shadow-lg border-2 border-white transform group-hover:scale-110 transition-transform">
+                   <Plus size={16} />
+                </div>
             </button>
 
-            <p className="text-[10px] font-bold text-gray-400 mb-4 uppercase tracking-widest">O SELECCIONA UN AVATAR</p>
-            
-            <div className="grid grid-cols-4 gap-3 w-full mb-8">
-                {AVATARS.map((avatar, i) => (
-                    <button 
-                      key={i}
-                      onClick={() => setTempData({...tempData, image: avatar})}
-                      className={`aspect-square rounded-2xl overflow-hidden border-2 transition-all shadow-sm ${tempData.image === avatar ? 'border-blue-600 ring-2 ring-blue-100 scale-105' : 'border-gray-100 hover:border-gray-300'}`}
-                    >
-                        <img src={avatar} alt={`Avatar ${i}`} className="w-full h-full object-cover" />
-                    </button>
-                ))}
-            </div>
-
-            <div className="w-full mt-auto">
-              <Button fullWidth onClick={() => onLogin('CLIENT', tempData)}>Finalizar Registro</Button>
+            <div className="w-full space-y-3">
+              <Button fullWidth onClick={() => onLogin('CLIENT', tempData)} disabled={uploadingPhoto} className="h-14 text-lg bg-gray-900 hover:bg-black shadow-xl shadow-gray-300">
+                 {tempData.image ? 'Finalizar Registro' : 'Continuar sin foto'}
+              </Button>
+              
+              {!tempData.image && (
+                <p className="text-center text-xs text-gray-400 font-medium">
+                  Se usará la inicial de tu nombre
+                </p>
+              )}
             </div>
           </div>
       </div>
@@ -261,21 +318,78 @@ export const ProviderOnboarding: React.FC<{
   onCancel: () => void,
   showBonusModal: boolean,
   bonusAmount: number,
-  onCloseBonus: () => void
-}> = ({ onComplete, onCancel, showBonusModal, bonusAmount, onCloseBonus }) => {
+  onCloseBonus: () => void,
+  currentUser: any
+}> = ({ onComplete, onCancel, showBonusModal, bonusAmount, onCloseBonus, currentUser }) => {
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState<Partial<UserData>>({
-      name: '', age: '', phone: '', location: '', bio: '',
+      name: currentUser?.displayName || '',
+      email: currentUser?.email || '',
+      age: '', phone: '', location: '', bio: '',
       professions: [], customProfession: '', tariffs: [], 
       paymentMethods: [], acceptedTerms: false, issuesInvoice: false
   });
   
+  // NEW: GPS State
+  const [locationCoords, setLocationCoords] = useState<{latitude: number, longitude: number} | null>(null);
+  const [gettingLocation, setGettingLocation] = useState(false);
+
+  const [docId, setDocId] = useState<string | null>(null);
+
+  // Firestore Profile Fetching Logic (Edit Mode)
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!currentUser?.uid) return;
+      try {
+        const q = query(collection(db, "solicitudes_servicio"), where("uid", "==", currentUser.uid));
+        const querySnapshot = await getDocs(q);
+        
+        if (!querySnapshot.empty) {
+          const doc = querySnapshot.docs[0];
+          setDocId(doc.id);
+          const data = doc.data();
+          setFormData(prev => ({ ...prev, ...data }));
+          
+          // Load saved coords if available
+          if (data.latitude && data.longitude) {
+              setLocationCoords({ latitude: data.latitude, longitude: data.longitude });
+          }
+          console.log("Perfil cargado:", doc.id);
+        }
+      } catch (error) {
+        console.error("Error al cargar perfil:", error);
+      }
+    };
+    fetchProfile();
+  }, [currentUser]);
+
+  // GPS Function
+  const handleGetLocation = () => {
+      setGettingLocation(true);
+      if (!navigator.geolocation) {
+          alert("Geolocalización no soportada en este navegador.");
+          setGettingLocation(false);
+          return;
+      }
+      navigator.geolocation.getCurrentPosition(
+          (position) => {
+              const { latitude, longitude } = position.coords;
+              setLocationCoords({ latitude, longitude });
+              setGettingLocation(false);
+          },
+          (error) => {
+              console.error(error);
+              alert("La ubicación es obligatoria para ofrecer servicios cercanos.");
+              setGettingLocation(false);
+          }
+      );
+  };
+
   const [newTariff, setNewTariff] = useState<Tariff>({service: '', price: '', unit: 'fixed'});
   const [tempPayment, setTempPayment] = useState<{type: 'BANK' | 'WALLET', entity: string, number: string}>({ type: 'WALLET', entity: '', number: '' });
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [submitStage, setSubmitStage] = useState<'IDLE' | 'ENCRYPTING' | 'UPLOADING' | 'FINALIZING'>('IDLE');
   
-  // Upload States
   const [uploadingIdFront, setUploadingIdFront] = useState(false);
   const [uploadingIdBack, setUploadingIdBack] = useState(false);
   const [uploadingCV, setUploadingCV] = useState(false);
@@ -314,7 +428,7 @@ export const ProviderOnboarding: React.FC<{
           };
           setFormData({ ...formData, paymentMethods: [...(formData.paymentMethods || []), newMethod] });
           setTempPayment({ type: 'WALLET', entity: '', number: '' });
-          setQrUrl(""); // Reset QR for next method
+          setQrUrl(""); 
       }
   };
 
@@ -374,32 +488,50 @@ export const ProviderOnboarding: React.FC<{
   };
 
   const handleSmartSubmit = async () => {
-    // Stage 1: Encrypting
     setSubmitStage('ENCRYPTING');
-    await new Promise(r => setTimeout(r, 1500));
-    
-    // Stage 2: Uploading
-    setSubmitStage('UPLOADING');
-    await new Promise(r => setTimeout(r, 2000));
-    
-    // Stage 3: Finalizing
-    setSubmitStage('FINALIZING');
     await new Promise(r => setTimeout(r, 1000));
+    setSubmitStage('UPLOADING');
+    
+    try {
+        const finalData = { 
+            ...formData, 
+            uid: currentUser?.uid,
+            email: currentUser?.email,
+            updatedAt: new Date().toISOString(),
+            latitude: locationCoords?.latitude,
+            longitude: locationCoords?.longitude
+        };
 
-    // Complete
-    onComplete(formData);
+        if (docId) {
+            await updateDoc(doc(db, "solicitudes_servicio", docId), finalData);
+            alert("Perfil Actualizado Correctamente");
+        } else {
+            await addDoc(collection(db, "solicitudes_servicio"), {
+                ...finalData,
+                createdAt: new Date().toISOString()
+            });
+        }
+        
+        setSubmitStage('FINALIZING');
+        await new Promise(r => setTimeout(r, 1000));
+        onComplete(formData);
+        
+    } catch (error) {
+        console.error("Error saving profile:", error);
+        alert("Error al guardar perfil");
+        setSubmitStage('IDLE');
+    }
   };
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 w-full relative">
       <div className="w-full max-w-2xl mx-auto bg-white min-h-screen shadow-sm flex flex-col">
-       {/* Header */}
        <div className="px-6 pt-6 pb-2 flex items-center justify-between bg-white sticky top-0 z-10 shadow-sm">
           <button onClick={step === 1 ? onCancel : () => setStep(step - 1)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
              <ChevronLeft size={24} />
           </button>
           <div className="flex gap-1.5">
-             {[1,2,3,4].map(i => ( // Reduced to 4 steps
+             {[1,2,3,4].map(i => (
                 <div key={i} className={`h-2 rounded-full transition-all duration-300 ${i <= step ? 'w-8 bg-gray-900' : 'w-2 bg-gray-200'}`} />
              ))}
           </div>
@@ -416,6 +548,25 @@ export const ProviderOnboarding: React.FC<{
                    <Input label="Celular" type="tel" className="flex-1" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
                 </div>
                 <Input label="Ubicación" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
+                
+                {/* MANDATORY GPS BUTTON */}
+                <div className="mb-4">
+                    <label className="block text-sm font-semibold text-gray-900 mb-2">Geolocalización (Obligatorio)</label>
+                    <button 
+                        onClick={handleGetLocation}
+                        disabled={gettingLocation || !!locationCoords}
+                        className={`w-full py-3 px-4 rounded-2xl border flex items-center justify-center gap-2 font-bold transition-all ${
+                            locationCoords 
+                            ? 'bg-green-50 border-green-200 text-green-700' 
+                            : 'bg-yellow-50 border-yellow-400 text-yellow-700 hover:bg-yellow-100'
+                        }`}
+                    >
+                        {gettingLocation ? <Loader2 className="animate-spin" size={20}/> : locationCoords ? <Check size={20}/> : <Navigation size={20}/>}
+                        {gettingLocation ? 'Obteniendo ubicación...' : locationCoords ? 'Ubicación Detectada' : '📍 Activar mi Ubicación GPS'}
+                    </button>
+                    {!locationCoords && <p className="text-xs text-red-500 mt-1 font-medium">* Requerido para continuar</p>}
+                </div>
+
                 <TextArea label="Sobre Ti" placeholder="Describe tu experiencia..." value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} />
              </div>
           )}
@@ -513,7 +664,6 @@ export const ProviderOnboarding: React.FC<{
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Verificación</h2>
                 <p className="text-gray-500 mb-6">Documentos para generar confianza.</p>
                 
-                {/* Hidden Inputs */}
                 <input type="file" ref={idFrontInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'ID_FRONT')} />
                 <input type="file" ref={idBackInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'ID_BACK')} />
                 <input type="file" ref={cvInputRef} className="hidden" accept=".pdf,image/*" onChange={(e) => handleFileChange(e, 'CV')} />
@@ -555,15 +705,13 @@ export const ProviderOnboarding: React.FC<{
              </div>
           )}
 
-          {step === 4 && ( // Merged Payment and Terms
+          {step === 4 && (
              <div className="animate-in fade-in slide-in-from-right">
                 <h2 className="text-2xl font-bold text-gray-900 mb-2">Métodos de Cobro</h2>
                 <p className="text-gray-500 mb-6">¿Cómo te pagarán los clientes?</p>
                 
-                {/* Hidden Input for QR */}
                 <input type="file" ref={qrInputRef} className="hidden" accept="image/*" onChange={(e) => handleFileChange(e, 'QR')} />
 
-                {/* Payment Methods List */}
                 {formData.paymentMethods?.map((pm, i) => (
                     <div key={i} className="bg-gray-100 p-3 rounded-xl mb-2 flex justify-between items-center">
                         <div>
@@ -575,7 +723,6 @@ export const ProviderOnboarding: React.FC<{
                     </div>
                 ))}
 
-                {/* Add Payment Form */}
                 <div className="bg-white p-4 rounded-2xl border border-gray-200 mt-4 mb-8">
                     <div className="flex gap-2 mb-4">
                         <button 
@@ -646,8 +793,8 @@ export const ProviderOnboarding: React.FC<{
                 disabled={!formData.acceptedTerms} 
              />
           ) : (
-            <Button fullWidth onClick={() => setStep(step + 1)}>
-              Continuar
+            <Button fullWidth onClick={() => setStep(step + 1)} disabled={step === 1 && !locationCoords}>
+              {step === 1 && !locationCoords ? 'Requiere Ubicación' : 'Continuar'}
             </Button>
           )}
        </div>
@@ -658,12 +805,11 @@ export const ProviderOnboarding: React.FC<{
               <h2 className="text-2xl font-black text-gray-900 mt-4">¡FELICIDADES!</h2>
               <p className="text-gray-500 mt-2 mb-6">Eres miembro verificado de The Source.</p>
               
-              {/* NEW VERIFICATION CARD DISPLAY */}
               <div className="w-full mb-6">
                  <VerificationCard 
                     name={formData.name || "Usuario Nuevo"} 
                     profession={formData.professions?.[0] || "Profesional"} 
-                    image={formData.image || AVATARS[0]}
+                    image={formData.image} 
                  />
               </div>
 

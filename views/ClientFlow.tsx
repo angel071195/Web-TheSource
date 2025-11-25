@@ -1,18 +1,21 @@
 
-import React, { useState } from 'react';
-import { Search, MapPin, Star, Calculator, Share2, Flag, MessageCircle, ChevronRight, CreditCard, HelpCircle, FileText, Filter, User, ArrowLeft, ShieldCheck, Mail, Grid, List, Briefcase, Phone, Camera, Lock } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Search, MapPin, Star, Calculator, Share2, Flag, MessageCircle, ChevronRight, CreditCard, HelpCircle, FileText, Filter, User, ArrowLeft, ShieldCheck, Mail, Grid, List, Briefcase, Phone, Camera, Lock, Loader2, Crosshair, Navigation, Check } from 'lucide-react';
 import { Button, Input, Modal, Badge, TextArea } from '../components/UIComponents';
 import { CATEGORIES, AVATARS } from '../constants';
 import { Provider, UserData, ViewState } from '../types';
+import { storage } from '../firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface HomeProps {
   userData: UserData;
   providers: Provider[];
   onSelectProvider: (p: Provider) => void;
   onToggleSearch: () => void;
+  onNavigate: (view: ViewState) => void;
 }
 
-export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectProvider, onToggleSearch }) => {
+export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectProvider, onToggleSearch, onNavigate }) => {
   return (
     <div className="w-full max-w-7xl mx-auto">
       {/* Header */}
@@ -41,7 +44,7 @@ export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectPro
              <div className="relative z-10 max-w-md">
                 <h3 className="text-white font-bold text-2xl mb-2">¿Buscas algo especial?</h3>
                 <p className="text-gray-400 text-sm mb-6">Publica tu solicitud y recibe ofertas de expertos en minutos.</p>
-                <button className="bg-white text-gray-900 px-6 py-3 rounded-xl text-sm font-bold hover:bg-blue-50 transition-colors shadow-lg">Publicar Solicitud</button>
+                <button onClick={() => onNavigate('REQUEST_SERVICE')} className="bg-white text-gray-900 px-6 py-3 rounded-xl text-sm font-bold hover:bg-blue-50 transition-colors shadow-lg">Publicar Solicitud</button>
              </div>
              <div className="absolute -right-10 -bottom-10 opacity-10 rotate-12">
                  <Search size={200} className="text-white" />
@@ -52,12 +55,12 @@ export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectPro
           <div className="mb-10">
              <div className="flex justify-between items-end mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Categorías</h2>
-                <button className="text-blue-600 text-sm font-bold hover:underline">Ver todas</button>
+                <button onClick={() => onNavigate('SEARCH')} className="text-blue-600 text-sm font-bold hover:underline">Ver todas</button>
              </div>
              
              <div className="flex overflow-x-auto gap-4 no-scrollbar pb-4 -mx-6 px-6 lg:mx-0 lg:px-0 lg:grid lg:grid-cols-6 xl:grid-cols-8">
                 {CATEGORIES.map((cat, i) => (
-                   <button key={cat.id} className="flex flex-col items-center gap-3 min-w-[80px] group transition-all">
+                   <button key={cat.id} onClick={() => onNavigate('SEARCH')} className="flex flex-col items-center gap-3 min-w-[80px] group transition-all">
                       <div className={`w-20 h-20 rounded-2xl flex items-center justify-center border transition-all group-hover:scale-105 group-hover:shadow-md ${i === 0 ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-gray-200 text-gray-500 group-hover:border-gray-300'}`}>
                          {cat.icon}
                       </div>
@@ -406,6 +409,10 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({ profile, o
     // EDIT PROFILE STATE
     const [showEditModal, setShowEditModal] = useState(false);
     const [editData, setEditData] = useState<Partial<UserData>>({});
+    const [uploadingPhoto, setUploadingPhoto] = useState(false);
+    const profileInputRef = useRef<HTMLInputElement>(null);
+    const [locationCoords, setLocationCoords] = useState<{latitude: number, longitude: number} | null>(null);
+    const [gettingLocation, setGettingLocation] = useState(false);
 
     const calculatePoints = () => {
       const num = parseFloat(simAmount);
@@ -421,14 +428,56 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({ profile, o
             image: profile.image,
             bio: profile.bio
         });
+        // Mock previous coordinates or load from profile if extended in types
+        // setLocationCoords({ latitude: profile.latitude, longitude: profile.longitude })
         setShowEditModal(true);
+    };
+
+    const handleGetLocation = () => {
+        setGettingLocation(true);
+        if (!navigator.geolocation) {
+            alert("Geolocalización no soportada.");
+            setGettingLocation(false);
+            return;
+        }
+        navigator.geolocation.getCurrentPosition(
+            (pos) => {
+                setLocationCoords({ latitude: pos.coords.latitude, longitude: pos.coords.longitude });
+                setGettingLocation(false);
+            },
+            (err) => {
+                console.error(err);
+                alert("Error al obtener ubicación.");
+                setGettingLocation(false);
+            }
+        );
     };
 
     const handleSaveProfile = () => {
         // Direct save, no verification required
-        onUpdateProfile(editData);
+        onUpdateProfile({ ...editData, ...locationCoords });
         setShowEditModal(false);
         alert("Perfil actualizado correctamente.");
+    };
+
+    const handleProfilePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingPhoto(true);
+        try {
+             const uniqueName = `profile_photos/${Date.now()}_${file.name}`;
+             const storageRef = ref(storage, uniqueName);
+             const snapshot = await uploadBytes(storageRef, file);
+             const downloadURL = await getDownloadURL(snapshot.ref);
+             
+             setEditData(prev => ({ ...prev, image: downloadURL }));
+        } catch(error) {
+             console.error("Upload failed", error);
+             alert("Error al subir imagen");
+        } finally {
+             setUploadingPhoto(false);
+        }
     };
 
     return (
@@ -440,7 +489,7 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({ profile, o
                 <div className="lg:col-span-1 space-y-6">
                      <div className="bg-white p-6 rounded-[32px] border border-gray-100 shadow-sm text-center">
                         <div className="w-24 h-24 rounded-full bg-gray-200 border-4 border-white shadow-lg flex items-center justify-center overflow-hidden mx-auto mb-4 relative group">
-                            {profile.image ? <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" /> : <User size={40} className="text-gray-400" />}
+                            {profile.image ? <img src={profile.image} alt="Avatar" className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-blue-500 text-white text-4xl font-black">{profile.name.charAt(0)}</div>}
                             <button onClick={handleEditOpen} className="absolute inset-0 bg-black/50 hidden group-hover:flex items-center justify-center text-white text-xs font-bold">Cambiar</button>
                         </div>
                         <h2 className="text-xl font-bold text-gray-900">{profile.name}</h2>
@@ -533,17 +582,22 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({ profile, o
             <Modal isOpen={showEditModal} onClose={() => setShowEditModal(false)} title="Editar Perfil">
                 <div className="space-y-4 max-h-[70vh] overflow-y-auto p-1">
                     <div className="flex flex-col items-center mb-4">
-                         <div className="w-24 h-24 rounded-full bg-gray-100 mb-4 overflow-hidden border-2 border-gray-200">
-                             {editData.image ? <img src={editData.image} className="w-full h-full object-cover" /> : <User className="w-full h-full p-4 text-gray-300"/>}
-                         </div>
-                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Seleccionar Avatar</p>
-                         <div className="grid grid-cols-5 gap-2 w-full">
-                             {AVATARS.slice(0, 10).map((av, i) => (
-                                 <button key={i} onClick={() => setEditData({...editData, image: av})} className={`w-10 h-10 rounded-full overflow-hidden border-2 transition-all ${editData.image === av ? 'border-blue-500 scale-110' : 'border-transparent hover:border-gray-300'}`}>
-                                     <img src={av} className="w-full h-full object-cover" />
-                                 </button>
-                             ))}
-                         </div>
+                         {/* Hidden File Input */}
+                         <input type="file" ref={profileInputRef} className="hidden" accept="image/*" onChange={handleProfilePhotoUpload} />
+
+                         <button 
+                             onClick={() => profileInputRef.current?.click()}
+                             disabled={uploadingPhoto}
+                             className="w-24 h-24 rounded-full bg-gray-100 mb-4 overflow-hidden border-2 border-gray-200 hover:border-blue-500 hover:scale-105 transition-all relative group"
+                         >
+                             {uploadingPhoto ? (
+                                 <div className="absolute inset-0 flex items-center justify-center bg-black/50 text-white">
+                                     <Loader2 className="animate-spin" />
+                                 </div>
+                             ) : null}
+                             {editData.image ? <img src={editData.image} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center bg-blue-500 text-white text-3xl font-bold">{editData.name?.charAt(0)}</div>}
+                             <div className="absolute inset-0 bg-black/40 hidden group-hover:flex items-center justify-center text-white text-[10px] font-bold uppercase">Cambiar Foto</div>
+                         </button>
                     </div>
 
                     <Input label="Nombre Completo" value={editData.name || ''} onChange={e => setEditData({...editData, name: e.target.value})} icon={User} />
@@ -551,13 +605,29 @@ export const ClientProfileView: React.FC<ClientProfileViewProps> = ({ profile, o
                     <Input label="Teléfono" value={editData.phone || ''} onChange={e => setEditData({...editData, phone: e.target.value})} icon={Phone} />
                     <Input label="Ubicación" value={editData.location || ''} onChange={e => setEditData({...editData, location: e.target.value})} icon={MapPin} />
                     
+                    {/* GPS BUTTON FOR EDIT */}
+                    <div className="mb-2">
+                        <button 
+                            onClick={handleGetLocation}
+                            disabled={gettingLocation}
+                            className={`w-full py-3 rounded-xl border flex items-center justify-center gap-2 font-bold transition-all ${
+                                locationCoords 
+                                ? 'bg-green-50 border-green-200 text-green-700' 
+                                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+                            }`}
+                        >
+                            {gettingLocation ? <Loader2 className="animate-spin" size={18}/> : locationCoords ? <Check size={18}/> : <Crosshair size={18}/>}
+                            {gettingLocation ? 'Localizando...' : locationCoords ? 'Ubicación Actualizada' : 'Activar mi Ubicación GPS'}
+                        </button>
+                    </div>
+
                     {profile.bio && (
                         <TextArea label="Bio (Sobre tí)" value={editData.bio || ''} onChange={e => setEditData({...editData, bio: e.target.value})} />
                     )}
 
                     <div className="pt-4 flex gap-3">
                         <Button fullWidth variant="outline" onClick={() => setShowEditModal(false)}>Cancelar</Button>
-                        <Button fullWidth onClick={handleSaveProfile}>Guardar Cambios</Button>
+                        <Button fullWidth onClick={handleSaveProfile} disabled={uploadingPhoto}>Guardar Cambios</Button>
                     </div>
                 </div>
             </Modal>

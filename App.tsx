@@ -1,9 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { Home, Search, PlusSquare, User, Inbox, Grid, Monitor, Wallet, LogOut, Menu } from 'lucide-react';
-import { ViewState, UserType, UserData, Provider, Lead, AdminData, JobPost } from './types';
+import { ViewState, UserType, UserData, Provider, Lead, AdminData, JobPost, UserDocument } from './types';
 import { INITIAL_PROVIDERS } from './constants';
 import emailjs from '@emailjs/browser';
+import { auth, googleProvider, facebookProvider, signInWithPopup } from './firebaseConfig';
 
 // Views
 import { LoginScreen, ProviderOnboarding } from './views/AuthFlow';
@@ -11,7 +12,7 @@ import { HomeView, ProfileDetail, ClientProfileView, RequestServiceView, SearchV
 import { WorkerDashboard, WalletView, MyServicesPanel, JobClosingSimulation, OpportunitiesView, LeadDetailView } from './views/ProviderFlow';
 import { AdminDashboard } from './views/AdminFlow';
 
-// EMAILJS CONFIGURATION
+// EMAILJS CONFIGURATION - REAL PRODUCTION CREDENTIALS
 const EMAIL_SERVICE_ID = "service_ytz8gpd";
 const EMAIL_TEMPLATE_ID = "template_gkqblyu";
 const EMAIL_PUBLIC_KEY = "9DpJRC-7vdu7TOeXl";
@@ -20,6 +21,7 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('LOGIN');
   const [userType, setUserType] = useState<UserType>('CLIENT');
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState<any>(null); // Firebase User
   
   // App State
   const [userData, setUserData] = useState<UserData>({
@@ -84,12 +86,23 @@ const App: React.FC = () => {
   const [showBonusModal, setShowBonusModal] = useState(false);
   const [bonusAmount, setBonusAmount] = useState(0);
 
+  // Monitor Auth State
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(user => {
+      setCurrentUser(user);
+      if (user) {
+        setUserData(prev => ({ ...prev, email: user.email || prev.email }));
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   // Scroll to top when view changes
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentView]);
 
-  // Admin Security Logic
+  // Admin Security Logic - EXACT MATCH REQUIRED
   useEffect(() => {
     const ADMIN_EMAIL = "elderangelo071195@gmail.com";
     if (userData.email && userData.email.trim().toLowerCase() === ADMIN_EMAIL) {
@@ -98,6 +111,54 @@ const App: React.FC = () => {
         setIsAdmin(false);
     }
   }, [userData.email]);
+
+  const handleSocialLogin = async (providerName: 'google' | 'facebook') => {
+    if (providerName === 'facebook') {
+      alert("🔒 Ingreso con Facebook disponible próximamente. Por favor usa Google.");
+      return;
+    }
+
+    try {
+      const provider = googleProvider;
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+      
+      console.log("Social Login Success:", user.email);
+      
+      setUserData(prev => ({
+        ...prev,
+        name: user.displayName || prev.name,
+        email: user.email || prev.email,
+        image: user.photoURL || prev.image
+      }));
+      
+      return user;
+    } catch (error: any) {
+      console.error("Social login error:", error);
+      if (error.code === 'auth/unauthorized-domain') {
+          // FALLBACK FOR PREVIEW ENVIRONMENTS
+          const confirmMock = window.confirm("Error de Dominio: Este entorno de vista previa no está autorizado en Firebase. ¿Deseas ingresar con una sesión simulada para probar la app?");
+          if (confirmMock) {
+             const mockUser = {
+                 displayName: "Usuario Prueba",
+                 email: "usuario@prueba.com",
+                 photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
+             };
+             setUserData(prev => ({ ...prev, name: mockUser.displayName, email: mockUser.email, image: mockUser.photoURL }));
+             
+             // Proceed to app
+             navigateTo(userType === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
+             return;
+          }
+      } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
+          console.log("User closed popup");
+          // Do nothing, just let them try again
+      } else {
+          alert(`Error al iniciar sesión: ${error.message || 'Inténtalo de nuevo'}`);
+      }
+      // Removed re-throw to prevent [object Object] error in UI
+    }
+  };
 
   const navigateTo = (view: ViewState | 'HIRE_MODE') => {
     if (view === 'HIRE_MODE') {
@@ -224,19 +285,23 @@ const App: React.FC = () => {
   const renderContent = () => {
     switch (currentView) {
       case 'LOGIN':
-        return <LoginScreen onLogin={(type, data) => {
-            setUserData({ ...userData, ...data });
-            setUserType(type);
-            
-            if (data.email) {
-                 sendWelcomeEmail(data);
-            }
-            
-            navigateTo(type === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
-        }} />;
+        return <LoginScreen 
+            onLogin={(type, data) => {
+                setUserData({ ...userData, ...data });
+                setUserType(type);
+                
+                if (data.email) {
+                    sendWelcomeEmail(data);
+                }
+                
+                navigateTo(type === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
+            }} 
+            onSocialLogin={handleSocialLogin}
+        />;
 
       case 'ONBOARDING_PROVIDER':
         return <ProviderOnboarding 
+          currentUser={currentUser}
           onComplete={(data) => {
             const bonus = calculateBonus();
             setBonusAmount(bonus);
@@ -263,6 +328,7 @@ const App: React.FC = () => {
            userData={userData} 
            providers={providers}
            onSelectProvider={(p) => { setSelectedProvider(p); setCurrentView('PROFILE_DETAIL'); }}
+           onNavigate={navigateTo}
            onToggleSearch={() => setCurrentView('SEARCH')}
         />;
         
@@ -302,7 +368,11 @@ const App: React.FC = () => {
         return selectedLead ? <LeadDetailView lead={selectedLead} onBack={() => navigateTo('WORKER_DASHBOARD')} /> : null;
 
       case 'MY_SERVICES':
-        return <MyServicesPanel userData={userData} onNavigate={navigateTo} />;
+        return <MyServicesPanel 
+            userData={userData} 
+            onNavigate={navigateTo} 
+            onUpdateUserData={(newData) => setUserData({ ...userData, ...newData })} 
+        />;
 
       case 'WALLET':
         return <WalletView userData={userData} onRecharge={() => { alert("Comprobante enviado. El administrador lo revisará."); navigateTo('WALLET'); }} />;
@@ -328,7 +398,7 @@ const App: React.FC = () => {
         return <TermsView onBack={() => navigateTo('CLIENT_PROFILE')} />;
 
       default:
-        return <HomeView userData={userData} providers={providers} onSelectProvider={() => {}} onToggleSearch={() => {}} />;
+        return <HomeView userData={userData} providers={providers} onSelectProvider={() => {}} onNavigate={navigateTo} onToggleSearch={() => {}} />;
     }
   };
 

@@ -54,22 +54,20 @@ export const WALLETS_BOLIVIA = [
   'Tigo Money', 'Yape', 'Soli Pagos', 'Simple'
 ];
 
+// Occupation-themed avatars using consistent styles
 export const AVATARS = [
-  // Heroes / Fantasy / Adventure
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Felix',
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Spooky',
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Bella',
-  'https://api.dicebear.com/7.x/adventurer/svg?seed=Abby',
-  // Robots / Sci-Fi
-  'https://api.dicebear.com/7.x/bottts/svg?seed=RoboCop',
-  'https://api.dicebear.com/7.x/bottts/svg?seed=C3PO',
-  'https://api.dicebear.com/7.x/bottts/svg?seed=WallE',
-  // Stylized / Cool People
-  'https://api.dicebear.com/7.x/micah/svg?seed=Wednesday',
-  'https://api.dicebear.com/7.x/micah/svg?seed=Sheldon',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Iron',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Bat',
-  'https://api.dicebear.com/7.x/avataaars/svg?seed=Wonder',
+  { url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix&clothing=overall&accessories=wayfarers', label: 'Técnico' },
+  { url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Jack&clothing=hoodie&accessories=eyepatch', label: 'Mecánico' },
+  { url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Aneka&top=hat&clothing=blazerAndShirt', label: 'Profesora' },
+  { url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Bob&facialHair=beardMajestic&clothing=shirtCrewNeck', label: 'Constructor' },
+  { url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Scooter&top=winterHat1&clothing=graphicShirt', label: 'Delivery' },
+  { url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Molly&clothing=collarAndSweater&accessories=round', label: 'Soporte' },
+  { url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Cuddles&top=hijab&clothing=overall', label: 'Jardinero' },
+  { url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Precious&top=shavedSides&clothing=shirtVNeck', label: 'Pintor' },
+  { url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Garfield&facialHair=mustacheFancy&top=turban', label: 'Chef' },
+  { url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Pepper&accessories=prescription02&clothing=blazerAndShirt', label: 'Contador' },
+  { url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Dusty&top=eyepatch&clothing=hoodie', label: 'Seguridad' },
+  { url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Simba&top=longHair&clothing=shirtCrewNeck', label: 'Limpieza' },
 ];
 
 export const INITIAL_PROVIDERS = [

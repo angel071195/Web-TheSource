@@ -1,9 +1,11 @@
 
-import React, { useState } from 'react';
-import { Lock, Unlock, MessageCircle, Wallet, Handshake, ChevronRight, Upload, History, ArrowDownCircle, FileText, MapPin, Clock, Monitor, Briefcase, Phone, User, Calendar, DollarSign, Filter } from 'lucide-react';
-import { UserData, Lead, JobPost } from '../types';
+import React, { useState, useRef } from 'react';
+import { Lock, Unlock, MessageCircle, Wallet, Handshake, ChevronRight, Upload, History, ArrowDownCircle, FileText, MapPin, Clock, Monitor, Briefcase, Phone, User, Calendar, DollarSign, Filter, Trash2, Plus, X, Download, File, Loader2 } from 'lucide-react';
+import { UserData, Lead, JobPost, UserDocument } from '../types';
 import { Button, Input, Badge, TextArea, Modal } from '../components/UIComponents';
 import { COLORS } from '../constants';
+import { storage } from '../firebaseConfig';
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 
 interface WorkerDashboardProps {
     userData: UserData;
@@ -297,7 +299,50 @@ export const WalletView: React.FC<{ userData: UserData, onRecharge: (amount: num
     );
 };
 
-export const MyServicesPanel: React.FC<{ userData: UserData, onNavigate: (v: string) => void }> = ({ userData, onNavigate }) => {
+export const MyServicesPanel: React.FC<{ userData: UserData, onNavigate: (v: string) => void, onUpdateUserData: (data: Partial<UserData>) => void }> = ({ userData, onNavigate, onUpdateUserData }) => {
+    
+    // DOCUMENT MANAGEMENT STATE
+    const [showDocsModal, setShowDocsModal] = useState(false);
+    const [uploadingDoc, setUploadingDoc] = useState(false);
+    const docInputRef = useRef<HTMLInputElement>(null);
+
+    const handleDocumentUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingDoc(true);
+        try {
+            const uniqueName = `documents/${Date.now()}_${file.name}`;
+            const storageRef = ref(storage, uniqueName);
+            const snapshot = await uploadBytes(storageRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+            
+            const newDoc: UserDocument = {
+                id: Math.random().toString(),
+                name: file.name,
+                url: downloadURL,
+                date: new Date().toLocaleDateString(),
+                type: file.type.includes('pdf') ? 'CV' : 'OTHER'
+            };
+
+            const updatedDocs = [...(userData.documents || []), newDoc];
+            onUpdateUserData({ documents: updatedDocs });
+            alert("Documento subido correctamente.");
+        } catch (error) {
+            console.error("Upload error", error);
+            alert("Error al subir el documento.");
+        } finally {
+            setUploadingDoc(false);
+        }
+    };
+
+    const handleDeleteDocument = (docId: string) => {
+        if(confirm("¿Estás seguro de eliminar este documento?")) {
+            const updatedDocs = (userData.documents || []).filter(d => d.id !== docId);
+            onUpdateUserData({ documents: updatedDocs });
+        }
+    };
+
     return (
         <div className="p-6 pb-24 w-full max-w-5xl mx-auto">
             <h1 className="text-3xl font-bold text-gray-900 mb-8">Mi Panel</h1>
@@ -321,11 +366,11 @@ export const MyServicesPanel: React.FC<{ userData: UserData, onNavigate: (v: str
                 </div>
 
                 <div className="lg:col-span-2 grid sm:grid-cols-2 gap-4">
-                    <button onClick={() => alert("Actualizar Curriculum")} className="w-full bg-white border border-gray-100 p-6 rounded-[24px] flex flex-col gap-4 hover:border-purple-200 hover:shadow-lg transition-all group h-full justify-between">
+                    <button onClick={() => setShowDocsModal(true)} className="w-full bg-white border border-gray-100 p-6 rounded-[24px] flex flex-col gap-4 hover:border-purple-200 hover:shadow-lg transition-all group h-full justify-between">
                         <div className="p-4 bg-purple-50 text-purple-600 rounded-2xl w-fit group-hover:bg-purple-100 transition-colors"><FileText size={32} /></div>
                         <div className="text-left">
-                            <p className="font-bold text-gray-900 text-lg">Curriculum Vitae</p>
-                            <p className="text-sm text-gray-500">Actualizar documentos y certificados</p>
+                            <p className="font-bold text-gray-900 text-lg">Gestión de Documentos</p>
+                            <p className="text-sm text-gray-500">Curriculum, Certificados y Títulos</p>
                         </div>
                     </button>
 
@@ -346,6 +391,58 @@ export const MyServicesPanel: React.FC<{ userData: UserData, onNavigate: (v: str
                     </button>
                 </div>
             </div>
+
+            {/* DOCUMENT MANAGEMENT MODAL */}
+            <Modal isOpen={showDocsModal} onClose={() => setShowDocsModal(false)} title="Mis Documentos">
+                <div className="space-y-6">
+                    <p className="text-sm text-gray-500">Sube tu Curriculum Vitae, certificados de trabajo o títulos profesionales para generar más confianza.</p>
+                    
+                    {/* Upload Area */}
+                    <input type="file" ref={docInputRef} className="hidden" accept=".pdf,image/*" onChange={handleDocumentUpload} />
+                    <button 
+                        onClick={() => docInputRef.current?.click()}
+                        disabled={uploadingDoc}
+                        className="w-full py-4 border-2 border-dashed border-gray-300 rounded-2xl flex items-center justify-center gap-3 text-gray-500 font-bold hover:bg-gray-50 hover:border-purple-300 hover:text-purple-600 transition-all"
+                    >
+                        {uploadingDoc ? <Loader2 className="animate-spin" /> : <Plus size={20} />}
+                        {uploadingDoc ? 'Subiendo...' : 'Subir Nuevo Documento'}
+                    </button>
+
+                    {/* Documents List */}
+                    <div className="space-y-3 max-h-[40vh] overflow-y-auto">
+                        {userData.documents && userData.documents.length > 0 ? (
+                            userData.documents.map((doc, idx) => (
+                                <div key={idx} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                    <div className="flex items-center gap-3 overflow-hidden">
+                                        <div className="p-2 bg-white rounded-lg border border-gray-200 text-red-500">
+                                            <File size={20} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="font-bold text-gray-900 text-sm truncate">{doc.name}</p>
+                                            <p className="text-[10px] text-gray-500">{doc.date}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <a href={doc.url} target="_blank" rel="noopener noreferrer" className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Descargar">
+                                            <Download size={16} />
+                                        </a>
+                                        <button onClick={() => handleDeleteDocument(doc.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Eliminar">
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
+                        ) : (
+                            <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                <FileText className="mx-auto text-gray-300 mb-2" size={32} />
+                                <p className="text-sm text-gray-400 font-medium">No tienes documentos subidos.</p>
+                            </div>
+                        )}
+                    </div>
+                    
+                    <Button fullWidth onClick={() => setShowDocsModal(false)}>Cerrar</Button>
+                </div>
+            </Modal>
         </div>
     );
 };
