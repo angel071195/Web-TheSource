@@ -489,6 +489,31 @@ export const ProviderOnboarding: React.FC<{
 
   const handleSmartSubmit = async () => {
     setSubmitStage('ENCRYPTING');
+    
+    // --- ANTI-DUPLICATE VALIDATION ---
+    try {
+      if (formData.phone) {
+        const phoneQuery = query(collection(db, "solicitudes_servicio"), where("phone", "==", formData.phone));
+        const phoneSnapshot = await getDocs(phoneQuery);
+        
+        const isDuplicate = phoneSnapshot.docs.some(doc => {
+           const data = doc.data();
+           // Check if duplicate belongs to DIFFERENT user (allow self-update)
+           return data.uid !== currentUser?.uid;
+        });
+
+        if (isDuplicate) {
+           alert("⛔ Este número de celular ya está registrado por otro usuario.");
+           setSubmitStage('IDLE');
+           return; // STOP SUBMISSION
+        }
+      }
+    } catch (e) {
+      console.error("Validation check failed", e);
+      // Continue cautiously or stop? We continue but log it.
+    }
+    // ---------------------------------
+
     await new Promise(r => setTimeout(r, 1000));
     setSubmitStage('UPLOADING');
     
