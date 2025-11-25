@@ -147,12 +147,17 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
                 </div>
               </div>
 
-              <button onClick={() => onSocialLogin('google')} className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-gray-200 border border-gray-100 flex items-center justify-center gap-3 transition-transform active:scale-95">
+              <button 
+                type="button"
+                onClick={() => onSocialLogin('google')} 
+                className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-gray-200 border border-gray-100 flex items-center justify-center gap-3 transition-transform active:scale-95"
+              >
                  <GoogleIcon />
                  <span>Continuar con Google</span>
               </button>
 
               <button 
+                type="button"
                 onClick={() => onSocialLogin('facebook')} 
                 className="w-full bg-[#1877F2]/50 cursor-not-allowed text-white/80 font-bold py-3.5 px-4 rounded-2xl shadow-none border border-blue-200/50 flex items-center justify-center gap-3 transition-none relative overflow-hidden"
               >
@@ -171,7 +176,7 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
 
               <div className="mt-4 text-center">
                  <p className="text-gray-400 text-xs mb-1">¿Aún no eres parte?</p>
-                 <button onClick={() => setStep('DETAILS')} className="text-gray-900 font-black text-sm hover:underline tracking-wide">
+                 <button type="button" onClick={() => setStep('DETAILS')} className="text-gray-900 font-black text-sm hover:underline tracking-wide">
                    CREAR CUENTA
                  </button>
               </div>
@@ -213,6 +218,7 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
                     onChange={handleLocationChange}
                   />
                   <button 
+                      type="button"
                       onClick={handleGPSLocation}
                       className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 rounded-xl transition-colors"
                       title="Usar GPS"
@@ -224,6 +230,7 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
                   <div className="absolute z-50 w-full bg-white border border-gray-100 rounded-xl shadow-xl mt-2 max-h-40 overflow-y-auto animate-in fade-in zoom-in duration-200">
                     {suggestions.map((city, idx) => (
                       <button
+                        type="button"
                         key={idx}
                         onClick={() => selectSuggestion(city)}
                         className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 font-medium flex items-center gap-2 border-b border-gray-50 last:border-0"
@@ -259,6 +266,7 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
             />
 
             <button 
+              type="button"
               onClick={() => photoInputRef.current?.click()}
               disabled={uploadingPhoto}
               className={`w-40 h-40 rounded-full flex flex-col items-center justify-center mb-10 transition-all duration-500 relative group shadow-2xl ${
@@ -488,6 +496,7 @@ export const ProviderOnboarding: React.FC<{
   };
 
   const handleSmartSubmit = async () => {
+    console.log("Guardando datos...");
     setSubmitStage('ENCRYPTING');
     
     // --- ANTI-DUPLICATE VALIDATION ---
@@ -552,7 +561,7 @@ export const ProviderOnboarding: React.FC<{
     <div className="flex flex-col min-h-screen bg-gray-50 w-full relative">
       <div className="w-full max-w-2xl mx-auto bg-white min-h-screen shadow-sm flex flex-col">
        <div className="px-6 pt-6 pb-2 flex items-center justify-between bg-white sticky top-0 z-10 shadow-sm">
-          <button onClick={step === 1 ? onCancel : () => setStep(step - 1)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
+          <button type="button" onClick={step === 1 ? onCancel : () => setStep(step - 1)} className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
              <ChevronLeft size={24} />
           </button>
           <div className="flex gap-1.5">
@@ -578,6 +587,7 @@ export const ProviderOnboarding: React.FC<{
                 <div className="mb-4">
                     <label className="block text-sm font-semibold text-gray-900 mb-2">Geolocalización (Obligatorio)</label>
                     <button 
+                        type="button"
                         onClick={handleGetLocation}
                         disabled={gettingLocation || !!locationCoords}
                         className={`w-full py-3 px-4 rounded-2xl border flex items-center justify-center gap-2 font-bold transition-all ${
@@ -607,6 +617,7 @@ export const ProviderOnboarding: React.FC<{
                       return (
                         <button 
                           key={cat.id} 
+                          type="button"
                           onClick={() => toggleProfession(cat.label)}
                           className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
                             isActive ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-200 text-gray-600'
@@ -618,6 +629,7 @@ export const ProviderOnboarding: React.FC<{
                       );
                    })}
                    <button 
+                      type="button"
                       onClick={() => toggleProfession('Otro')}
                       className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
                         formData.professions?.includes('Otro') ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-200 text-gray-600'
@@ -696,6 +708,7 @@ export const ProviderOnboarding: React.FC<{
                 <p className="font-bold text-sm mb-2">Carnet de Identidad (Obligatorio)</p>
                 <div className="flex gap-4 mb-6">
                    <button 
+                     type="button"
                      onClick={() => idFrontInputRef.current?.click()}
                      disabled={uploadingIdFront}
                      className={`flex-1 h-24 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-colors ${formData.idFront ? 'bg-green-50 border-green-400 text-green-600' : 'bg-gray-50 border-gray-300 text-gray-400'}`}
@@ -704,6 +717,7 @@ export const ProviderOnboarding: React.FC<{
                       <span className="text-xs font-bold">{uploadingIdFront ? 'Subiendo...' : formData.idFront ? 'Cargado' : 'Anverso'}</span>
                    </button>
                    <button 
+                     type="button"
                      onClick={() => idBackInputRef.current?.click()}
                      disabled={uploadingIdBack}
                      className={`flex-1 h-24 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center transition-colors ${formData.idBack ? 'bg-green-50 border-green-400 text-green-600' : 'bg-gray-50 border-gray-300 text-gray-400'}`}
@@ -715,6 +729,7 @@ export const ProviderOnboarding: React.FC<{
                 
                 <h3 className="font-bold text-gray-900 text-sm mb-2">Currículum / Certificado (Opcional)</h3>
                 <button 
+                    type="button"
                     onClick={() => cvInputRef.current?.click()}
                     disabled={uploadingCV}
                     className="w-full h-16 rounded-2xl border-2 border-dashed border-purple-300 bg-purple-50 flex items-center justify-center gap-3 text-purple-600 font-bold hover:bg-purple-100 transition-colors mb-6"
@@ -751,12 +766,14 @@ export const ProviderOnboarding: React.FC<{
                 <div className="bg-white p-4 rounded-2xl border border-gray-200 mt-4 mb-8">
                     <div className="flex gap-2 mb-4">
                         <button 
+                            type="button"
                             onClick={() => setTempPayment({...tempPayment, type: 'WALLET'})}
                             className={`flex-1 py-2 rounded-lg text-xs font-bold ${tempPayment.type === 'WALLET' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500'}`}
                         >
                             Billetera Móvil
                         </button>
                         <button 
+                            type="button"
                             onClick={() => setTempPayment({...tempPayment, type: 'BANK'})}
                             className={`flex-1 py-2 rounded-lg text-xs font-bold ${tempPayment.type === 'BANK' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-500'}`}
                         >
@@ -781,6 +798,7 @@ export const ProviderOnboarding: React.FC<{
                             onChange={(e) => setTempPayment({...tempPayment, number: e.target.value})} 
                         />
                         <button 
+                            type="button"
                             onClick={() => qrInputRef.current?.click()}
                             disabled={uploadingQR}
                             className={`w-full py-3 border-2 border-dashed border-gray-300 rounded-xl text-sm flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors ${qrUrl ? 'text-green-600 bg-green-50 border-green-300' : 'text-gray-400'}`}
@@ -796,7 +814,7 @@ export const ProviderOnboarding: React.FC<{
 
                 <div className="bg-blue-50 p-4 rounded-2xl mb-4">
                    <p className="text-sm text-blue-800 leading-relaxed mb-2">
-                      Al continuar, aceptas los <button onClick={() => setShowTermsModal(true)} className="font-bold underline cursor-pointer">Términos y Condiciones</button>, Políticas de Privacidad y el modelo de cobro de <strong>Source Solution APP</strong>.
+                      Al continuar, aceptas los <button type="button" onClick={() => setShowTermsModal(true)} className="font-bold underline cursor-pointer">Términos y Condiciones</button>, Políticas de Privacidad y el modelo de cobro de <strong>Source Solution APP</strong>.
                    </p>
                    <p className="text-xs text-blue-600 font-bold">
                        * The Source cobra una comisión del 5% sobre el total de los servicios prestados.
