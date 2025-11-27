@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>StreamHub</title>
+    <title>StreamHub - Edición Navidad</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -12,11 +12,11 @@
           extend: {
             colors: {
               brand: {
-                50: '#f0f9ff',
-                100: '#e0f2fe',
-                500: '#0ea5e9',
-                600: '#0284c7',
-                900: '#0c4a6e',
+                50: '#fef2f2',
+                100: '#fee2e2',
+                500: '#ef4444', // Christmas Red
+                600: '#dc2626', // Deep Red
+                900: '#7f1d1d', // Dark Red
               },
               dark: {
                 800: '#1e1e2e', // Background
@@ -40,9 +40,68 @@
   }
 }
 </script>
+<style>
+  /* Christmas Snow Effect */
+  .snowflake {
+    color: #fff;
+    font-size: 1.5em;
+    font-family: Arial, sans-serif;
+    text-shadow: 0 0 5px #000;
+    position: fixed;
+    top: -10%;
+    z-index: 9999;
+    user-select: none;
+    cursor: default;
+    animation-name: snowflakes-fall, snowflakes-shake;
+    animation-duration: 10s, 3s;
+    animation-timing-function: linear, ease-in-out;
+    animation-iteration-count: infinite, infinite;
+    animation-play-state: running, running;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  
+  @keyframes snowflakes-fall {
+    0% { top: -10%; }
+    100% { top: 100%; }
+  }
+  
+  @keyframes snowflakes-shake {
+    0%, 100% { transform: translateX(0); }
+    50% { transform: translateX(80px); }
+  }
+  
+  .snowflake:nth-of-type(1) { left: 1%; animation-delay: 0s, 0s; }
+  .snowflake:nth-of-type(2) { left: 10%; animation-delay: 1s, 1s; }
+  .snowflake:nth-of-type(3) { left: 20%; animation-delay: 6s, 0.5s; }
+  .snowflake:nth-of-type(4) { left: 30%; animation-delay: 4s, 2s; }
+  .snowflake:nth-of-type(5) { left: 40%; animation-delay: 2s, 2s; }
+  .snowflake:nth-of-type(6) { left: 50%; animation-delay: 8s, 3s; }
+  .snowflake:nth-of-type(7) { left: 60%; animation-delay: 6s, 2s; }
+  .snowflake:nth-of-type(8) { left: 70%; animation-delay: 2.5s, 1s; }
+  .snowflake:nth-of-type(9) { left: 80%; animation-delay: 1s, 0s; }
+  .snowflake:nth-of-type(10) { left: 90%; animation-delay: 3s, 1.5s; }
+  .snowflake:nth-of-type(11) { left: 25%; animation-delay: 2s, 0.5s; }
+  .snowflake:nth-of-type(12) { left: 65%; animation-delay: 4s, 2.5s; }
+</style>
 <link rel="stylesheet" href="/index.css">
 </head>
   <body>
+    <!-- Snowflakes Container -->
+    <div class="snowflakes" aria-hidden="true">
+      <div class="snowflake">❅</div>
+      <div class="snowflake">❆</div>
+      <div class="snowflake">❄</div>
+      <div class="snowflake">❅</div>
+      <div class="snowflake">❆</div>
+      <div class="snowflake">❄</div>
+      <div class="snowflake">❅</div>
+      <div class="snowflake">❆</div>
+      <div class="snowflake">❄</div>
+      <div class="snowflake">❅</div>
+      <div class="snowflake">❆</div>
+      <div class="snowflake">❄</div>
+    </div>
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

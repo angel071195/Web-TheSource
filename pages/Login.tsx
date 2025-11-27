@@ -31,10 +31,10 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-dark-900 flex flex-col items-center justify-center p-4 text-white relative overflow-hidden">
-      {/* Background decoration */}
+      {/* Background decoration - Christmas Theme (Red/Green) */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden z-0 pointer-events-none">
         <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] bg-brand-600/10 rounded-full blur-3xl"></div>
-        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-[-10%] left-[-5%] w-[500px] h-[500px] bg-green-600/10 rounded-full blur-3xl"></div>
       </div>
 
       <div className="z-10 w-full max-w-md flex flex-col items-center animate-fade-in">
@@ -83,12 +83,12 @@ const Login: React.FC = () => {
           <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isAdminEmail ? 'max-h-24 opacity-100 mt-6 pt-6 border-t border-gray-700' : 'max-h-0 opacity-0'}`}>
             <div className="flex flex-col gap-2">
                <p className="text-xs text-gray-400 text-center mb-2 flex items-center justify-center gap-1">
-                 <ShieldCheck size={12} className="text-purple-400"/>
+                 <ShieldCheck size={12} className="text-green-400"/>
                  Acceso Administrativo Detectado
                </p>
                <button
                   onClick={handleAdminLogin}
-                  className="w-full flex items-center justify-center px-4 py-2 border border-purple-500/30 text-sm font-medium rounded-lg text-purple-300 hover:bg-purple-900/20 hover:text-white transition-colors"
+                  className="w-full flex items-center justify-center px-4 py-2 border border-green-500/30 text-sm font-medium rounded-lg text-green-300 hover:bg-green-900/20 hover:text-white transition-colors"
                 >
                   <Lock className="mr-2 h-4 w-4" />
                   Acceso Administrador
@@ -98,7 +98,7 @@ const Login: React.FC = () => {
         </div>
       </div>
       
-      <p className="mt-8 text-xs text-gray-600 z-10">© 2025 StreamHub Platform.</p>
+      <p className="mt-8 text-xs text-gray-600 z-10">© 2025 StreamHub - Edición Navidad 🎄</p>
     </div>
   );
 };
