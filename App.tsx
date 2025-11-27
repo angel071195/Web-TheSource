@@ -26,11 +26,21 @@ const SantaHatIcon = () => (
 );
 
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<ViewState>('LOGIN');
-  const [userType, setUserType] = useState<UserType>('CLIENT');
+  // --- STATE INITIALIZATION WITH PERSISTENCE (LOCALSTORAGE) ---
+  
+  const [currentView, setCurrentView] = useState<ViewState>(() => {
+    const saved = localStorage.getItem('app_currentView');
+    return (saved as ViewState) || 'LOGIN';
+  });
+
+  const [userType, setUserType] = useState<UserType>(() => {
+    const saved = localStorage.getItem('app_userType');
+    return (saved as UserType) || 'CLIENT';
+  });
+
   const [isAdmin, setIsAdmin] = useState(false);
-  const [currentUser, setCurrentUser] = useState<any>(null); // Firebase User
-  const [authLoading, setAuthLoading] = useState(true); // Critical for avoiding refresh bug
+  const [currentUser, setCurrentUser] = useState<any>(null); 
+  const [authLoading, setAuthLoading] = useState(true); 
   
   // App State
   const [userData, setUserData] = useState<UserData>({
@@ -42,8 +52,17 @@ const App: React.FC = () => {
   });
 
   const [providers, setProviders] = useState<Provider[]>(INITIAL_PROVIDERS);
-  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(null);
-  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  
+  // Persist Selected Items to prevent blank screens on refresh
+  const [selectedProvider, setSelectedProvider] = useState<Provider | null>(() => {
+    const saved = localStorage.getItem('app_selectedProvider');
+    return saved ? JSON.parse(saved) : null;
+  });
+
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(() => {
+    const saved = localStorage.getItem('app_selectedLead');
+    return saved ? JSON.parse(saved) : null;
+  });
 
   const [leads, setLeads] = useState<Lead[]>([
      { id: 'l1', clientName: 'Maria Rodriguez', avatar: 'https://randomuser.me/api/portraits/women/12.jpg', location: 'Barrio Central', message: 'Necesito reparar un enchufe que hace corto.', status: 'LOCKED', date: 'Hoy', phone: '70012345', category: 'Electricista', budget: '50 Bs' },
@@ -96,6 +115,24 @@ const App: React.FC = () => {
   const [showBonusModal, setShowBonusModal] = useState(false);
   const [bonusAmount, setBonusAmount] = useState(0);
 
+  // --- PERSISTENCE EFFECTS ---
+  useEffect(() => {
+    localStorage.setItem('app_currentView', currentView);
+  }, [currentView]);
+
+  useEffect(() => {
+    localStorage.setItem('app_userType', userType);
+  }, [userType]);
+
+  useEffect(() => {
+    localStorage.setItem('app_selectedProvider', JSON.stringify(selectedProvider));
+  }, [selectedProvider]);
+
+  useEffect(() => {
+    localStorage.setItem('app_selectedLead', JSON.stringify(selectedLead));
+  }, [selectedLead]);
+
+
   // Monitor Auth State & Admin Security (Firebase Auth)
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
@@ -105,15 +142,20 @@ const App: React.FC = () => {
         // Update local user data
         setUserData(prev => ({ ...prev, email: user.email || prev.email }));
         
-        // Auto-redirect if on LOGIN screen
+        // Only redirect to HOME if the user was explicitly on the Login screen.
+        // Otherwise, respect the 'currentView' loaded from localStorage.
         if (currentView === 'LOGIN') {
             setCurrentView('HOME');
         }
+      } else {
+        // If not logged in, forcing LOGIN ensures protected routes aren't visible
+        setCurrentView('LOGIN');
+        // Optional: Clear storage on logout if desired, but keeping it allows "remembering" state until auth check fails
       }
       setAuthLoading(false); // Stop loading screen
     });
     return () => unsubscribe();
-  }, [currentView]);
+  }, []); // Remove currentView dependency to prevent loop
 
   // Monitor UserData Email for Admin Access (Manual + Social)
   useEffect(() => {
@@ -151,7 +193,6 @@ const App: React.FC = () => {
         image: user.photoURL || prev.image
       }));
       
-      // Redirect handled by onAuthStateChanged
       return user;
     } catch (error: any) {
       console.error("Social login error:", error);
@@ -185,8 +226,10 @@ const App: React.FC = () => {
         setCurrentView('HOME');
         return;
     }
-    setSelectedProvider(null);
-    setSelectedLead(null);
+    // We clear selection when navigating away, unless navigating TO a detail view (handled elsewhere)
+    if (view !== 'PROFILE_DETAIL') setSelectedProvider(null);
+    if (view !== 'LEAD_DETAIL') setSelectedLead(null);
+    
     setCurrentView(view);
   };
 
@@ -493,7 +536,12 @@ const App: React.FC = () => {
               <button 
                 type="button"
                 onClick={() => {
-                   if(confirm("¿Cerrar Sesión?")) setCurrentView('LOGIN');
+                   if(confirm("¿Cerrar Sesión?")) {
+                       // Clear storage on manual logout
+                       localStorage.removeItem('app_currentView');
+                       localStorage.removeItem('app_userType');
+                       setCurrentView('LOGIN');
+                   }
                 }}
                 className="flex items-center gap-3 text-gray-500 hover:text-red-500 hover:bg-red-50 p-3 rounded-xl w-full transition-colors font-medium text-sm"
               >
