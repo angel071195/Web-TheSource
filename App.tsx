@@ -1,6 +1,6 @@
-
+// src/App.tsx
 import React, { useState, useEffect } from 'react';
-import { Home, Search, PlusSquare, User, Inbox, Grid, Monitor, Wallet, LogOut, Menu, Loader2 } from 'lucide-react';
+import { Home, Search, PlusSquare, User, Inbox, Grid, Monitor, Wallet, LogOut, Menu, Snowflake } from 'lucide-react';
 import { ViewState, UserType, UserData, Provider, Lead, AdminData, JobPost, UserDocument } from './types';
 import { INITIAL_PROVIDERS } from './constants';
 import emailjs from '@emailjs/browser';
@@ -11,18 +11,41 @@ import { LoginScreen, ProviderOnboarding } from './views/AuthFlow';
 import { HomeView, ProfileDetail, ClientProfileView, RequestServiceView, SearchView, TermsView } from './views/ClientFlow';
 import { WorkerDashboard, WalletView, MyServicesPanel, JobClosingSimulation, OpportunitiesView, LeadDetailView } from './views/ProviderFlow';
 import { AdminDashboard } from './views/AdminFlow';
+import { Snowfall } from './components/UIComponents';
 
 // EMAILJS CONFIGURATION - REAL PRODUCTION CREDENTIALS
 const EMAIL_SERVICE_ID = "service_ytz8gpd";
 const EMAIL_TEMPLATE_ID = "template_gkqblyu";
 const EMAIL_PUBLIC_KEY = "9DpJRC-7vdu7TOeXl";
 
+// --- Persist view constants
+const VIEW_PARAM = 'view';
+const VIEW_STORAGE_KEY = 'the_source:viewState';
+
+function readViewFromUrlOrStorage(defaultView: ViewState): ViewState {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const v = params.get(VIEW_PARAM);
+    if (v && typeof v === 'string') {
+      return v as ViewState;
+    }
+  } catch (e) { /* ignore */ }
+
+  try {
+    const stored = sessionStorage.getItem(VIEW_STORAGE_KEY);
+    if (stored) return stored as ViewState;
+  } catch (e) { /* ignore */ }
+
+  return defaultView;
+}
+
 const App: React.FC = () => {
-  const [authLoading, setAuthLoading] = useState(true); // CRITICAL: Blocks UI until Auth is ready
-  const [currentView, setCurrentView] = useState<ViewState>('LOGIN');
+  // Inicializa leyendo URL o sessionStorage (si existe)
+  const [currentView, setCurrentView] = useState<ViewState>(() => readViewFromUrlOrStorage('LOGIN'));
   const [userType, setUserType] = useState<UserType>('CLIENT');
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null); // Firebase User
+  const [authLoading, setAuthLoading] = useState(true);
   
   // App State
   const [userData, setUserData] = useState<UserData>({
@@ -87,38 +110,87 @@ const App: React.FC = () => {
   const [showBonusModal, setShowBonusModal] = useState(false);
   const [bonusAmount, setBonusAmount] = useState(0);
 
-  // Monitor Auth State & Admin Security
+  // Helper: set view + sync to sessionStorage + URL
+  const setViewAndSync = (next: ViewState, opts?: { replace?: boolean; extra?: Record<string,string> }) => {
+    setCurrentView(next);
+    try { sessionStorage.setItem(VIEW_STORAGE_KEY, next); } catch(e){ /* ignore */ }
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set(VIEW_PARAM, next);
+      if (opts?.extra) {
+        Object.entries(opts.extra).forEach(([k, v]) => url.searchParams.set(k, v));
+      }
+      if (opts?.replace) {
+        window.history.replaceState({}, '', url.toString());
+      } else {
+        window.history.pushState({}, '', url.toString());
+      }
+    } catch (e) { /* ignore */ }
+  };
+
+  // Navigation helper used by UI (keeps same behavior but syncs)
+  const navigateTo = (view: ViewState | 'HIRE_MODE') => {
+    if (view === 'HIRE_MODE') {
+        setViewAndSync('HOME');
+        return;
+    }
+    setSelectedProvider(null);
+    setSelectedLead(null);
+    setViewAndSync(view);
+  };
+
+  // Monitor Auth State
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       setCurrentUser(user);
-      
       if (user) {
-        // 1. Set basic user data
         setUserData(prev => ({ ...prev, email: user.email || prev.email }));
         
-        // 2. Check Admin Status STRICTLY
+        // ADMIN CHECK (Exact Match)
         const ADMIN_EMAIL = "elderangelo071195@gmail.com";
-        const isAdm = user.email?.trim().toLowerCase() === ADMIN_EMAIL;
-        setIsAdmin(isAdm);
-
-        // 3. Auto-Redirect if on Login screen
-        if (currentView === 'LOGIN') {
-            setCurrentView('HOME');
+        if (user.email && user.email.trim().toLowerCase() === ADMIN_EMAIL) {
+            setIsAdmin(true);
+        } else {
+            setIsAdmin(false);
         }
-      } else {
-        setIsAdmin(false);
+
+        // Auto-redirect if on login screen
+        if (currentView === 'LOGIN') {
+            setViewAndSync('HOME');
+        }
       }
-      
-      // 4. Release Loading Lock
       setAuthLoading(false);
     });
     return () => unsubscribe();
-  }, [currentView]); // Added dependency to ensure redirect works
+  }, [currentView]);
+
+  // Listen to browser history change (back/forward)
+  useEffect(() => {
+    const onPop = () => {
+      const newView = readViewFromUrlOrStorage('LOGIN');
+      setCurrentView(newView);
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
 
   // Scroll to top when view changes
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentView]);
+
+  const processLogin = (user: any) => {
+      console.log("Social Login Success:", user.email);
+      
+      setUserData(prev => ({
+        ...prev,
+        name: user.displayName || prev.name,
+        email: user.email || prev.email,
+        image: user.photoURL || prev.image
+      }));
+      
+      setViewAndSync(userType === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
+  };
 
   const handleSocialLogin = async (providerName: 'google' | 'facebook') => {
     if (providerName === 'facebook') {
@@ -129,20 +201,14 @@ const App: React.FC = () => {
     try {
       const provider = googleProvider;
       const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      console.log("Social Login Success:", user.email);
-      
-      setUserData(prev => ({
-        ...prev,
-        name: user.displayName || prev.name,
-        email: user.email || prev.email,
-        image: user.photoURL || prev.image
-      }));
-      
-      return user;
+      processLogin(result.user);
     } catch (error: any) {
       console.error("Social login error:", error);
+      
+      const errorMessage = typeof error === 'object' && error !== null && 'message' in error 
+        ? (error as any).message 
+        : 'Error desconocido';
+
       if (error.code === 'auth/unauthorized-domain') {
           // FALLBACK FOR PREVIEW ENVIRONMENTS
           const confirmMock = window.confirm("Error de Dominio: Este entorno de vista previa no está autorizado en Firebase. ¿Deseas ingresar con una sesión simulada para probar la app?");
@@ -152,31 +218,16 @@ const App: React.FC = () => {
                  email: "usuario@prueba.com",
                  photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
              };
-             setUserData(prev => ({ ...prev, name: mockUser.displayName, email: mockUser.email, image: mockUser.photoURL }));
-             
-             // Proceed to app
-             navigateTo(userType === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
+             processLogin(mockUser);
              return;
           }
       } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
           console.log("User closed popup");
           // Do nothing, just let them try again
       } else {
-          // Safe error message extraction
-          const msg = error.message || "Error desconocido";
-          alert(`Error al iniciar sesión: ${msg}`);
+          alert(`Error al iniciar sesión: ${errorMessage}`);
       }
     }
-  };
-
-  const navigateTo = (view: ViewState | 'HIRE_MODE') => {
-    if (view === 'HIRE_MODE') {
-        setCurrentView('HOME');
-        return;
-    }
-    setSelectedProvider(null);
-    setSelectedLead(null);
-    setCurrentView(view);
   };
 
   const sendWelcomeEmail = (data: Partial<UserData>) => {
@@ -202,7 +253,7 @@ const App: React.FC = () => {
     const newPoints = (userData.loyaltyPoints || 0) + points;
     setUserData({ ...userData, loyaltyPoints: newPoints });
     alert(`¡Excelente! Has ganado +${points} puntos.`);
-    setCurrentView('HOME');
+    setViewAndSync('HOME');
   };
 
   const handleUnlockLead = (leadId: string) => {
@@ -213,7 +264,7 @@ const App: React.FC = () => {
           const lead = leads.find(l => l.id === leadId);
           if (lead) {
              setSelectedLead(lead);
-             setCurrentView('LEAD_DETAIL');
+             setViewAndSync('LEAD_DETAIL');
           }
           return;
       }
@@ -246,13 +297,13 @@ const App: React.FC = () => {
       const lead = leads.find(l => l.id === leadId);
       if (lead) {
          setSelectedLead(lead);
-         setCurrentView('LEAD_DETAIL');
+         setViewAndSync('LEAD_DETAIL');
       }
   };
 
   const handleViewLead = (lead: Lead) => {
       setSelectedLead(lead);
-      setCurrentView('LEAD_DETAIL');
+      setViewAndSync('LEAD_DETAIL');
   };
 
   // ADMIN LOGIC: Approve Recharge
@@ -292,10 +343,18 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white">
+                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Cargando The Source...</p>
+            </div>
+        );
+    }
+
     switch (currentView) {
       case 'LOGIN':
         return <LoginScreen 
-            currentUser={currentUser} // Pass currentUser to save to DB
             onLogin={(type, data) => {
                 setUserData({ ...userData, ...data });
                 setUserType(type);
@@ -337,15 +396,15 @@ const App: React.FC = () => {
         return <HomeView 
            userData={userData} 
            providers={providers}
-           onSelectProvider={(p) => { setSelectedProvider(p); setCurrentView('PROFILE_DETAIL'); }}
+           onSelectProvider={(p) => { setSelectedProvider(p); setViewAndSync('PROFILE_DETAIL'); }}
            onNavigate={navigateTo}
-           onToggleSearch={() => setCurrentView('SEARCH')}
+           onToggleSearch={() => setViewAndSync('SEARCH')}
         />;
         
       case 'SEARCH':
         return <SearchView 
            providers={providers}
-           onSelectProvider={(p) => { setSelectedProvider(p); setCurrentView('PROFILE_DETAIL'); }}
+           onSelectProvider={(p) => { setSelectedProvider(p); setViewAndSync('PROFILE_DETAIL'); }}
         />;
 
       case 'REQUEST_SERVICE':
@@ -414,22 +473,6 @@ const App: React.FC = () => {
 
   const showNav = !['LOGIN', 'ONBOARDING_PROVIDER', 'JOB_CLOSING', 'ADMIN', 'PROFILE_DETAIL', 'LEAD_DETAIL', 'TERMS'].includes(currentView);
 
-  // 5. LOADING SCREEN (Dark Premium Aesthetic)
-  if (authLoading) {
-      return (
-          <div className="min-h-screen w-full bg-gray-900 flex flex-col items-center justify-center animate-in fade-in">
-              <div className="relative mb-8">
-                  <div className="w-24 h-24 bg-gray-800 rounded-3xl flex items-center justify-center relative z-10 shadow-inner border border-gray-700">
-                      <span className="text-white text-5xl font-black">S</span>
-                  </div>
-                  <div className="absolute inset-0 bg-blue-500 rounded-3xl blur-xl opacity-20 animate-pulse"></div>
-              </div>
-              <Loader2 size={32} className="text-blue-500 animate-spin mb-4" />
-              <p className="text-gray-500 text-xs font-bold tracking-[0.3em] uppercase">Cargando The Source...</p>
-          </div>
-      );
-  }
-
   return (
     // Main Container - Full Screen, Adaptive
     <div className="min-h-screen w-full bg-gray-50 flex">
@@ -438,8 +481,16 @@ const App: React.FC = () => {
       {showNav && (
         <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-100 h-screen sticky top-0 shadow-sm z-50">
            <div className="p-6">
-              <h1 className="text-2xl font-black text-gray-900 tracking-tighter">THE SOURCE</h1>
-              <p className="text-[10px] font-bold text-blue-600 tracking-[0.3em] uppercase">Solutions App</p>
+              <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-red-700 via-red-600 to-amber-600">
+                  THE SOURCE
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm text-red-600">
+                        <path d="M12 3C9 3 6 5 5 8C5 10 7 12 7 14C7 16 6 18 5 20C5 21.5 6.5 23 8.5 23H15.5C17.5 23 19 21.5 19 20C18 18 17 16 17 14C17 12 19 10 19 8C17.5 5 14.5 3 11 3" fill="#DC2626" stroke="#B91C1C" strokeWidth="1.5"/>
+                        <circle cx="20" cy="22" r="2.5" fill="white" stroke="#E5E7EB"/>
+                        <path d="M5 20C5 20 8 19 12 19C16 19 19 20 19 20" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+                        <circle cx="11" cy="3" r="2.5" fill="white" stroke="#E5E7EB"/>
+                  </svg>
+              </h1>
+              <p className="text-[10px] font-bold text-red-600 tracking-[0.3em] uppercase">Holiday Edition</p>
            </div>
            
            <nav className="flex-1 px-4 space-y-2">
@@ -463,10 +514,7 @@ const App: React.FC = () => {
            <div className="p-4 border-t border-gray-100">
               <button 
                 onClick={() => {
-                   if(confirm("¿Cerrar Sesión?")) {
-                       auth.signOut();
-                       setCurrentView('LOGIN');
-                   }
+                   if(confirm("¿Cerrar Sesión?")) setViewAndSync('LOGIN');
                 }}
                 className="flex items-center gap-3 text-gray-500 hover:text-red-500 hover:bg-red-50 p-3 rounded-xl w-full transition-colors font-medium text-sm"
               >
@@ -509,19 +557,4 @@ const App: React.FC = () => {
 };
 
 // Component for Mobile Bottom Nav Button
-const NavBtn: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
-  <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors min-w-[60px] py-1.5 px-2 rounded-xl ${active ? 'text-blue-600 bg-blue-50' : 'hover:text-gray-600 hover:bg-gray-50'}`}>
-    <Icon size={24} strokeWidth={active ? 2.5 : 2} />
-    <span className="text-[10px] font-medium">{label}</span>
-  </button>
-);
-
-// Component for Desktop Sidebar Item
-const NavSidebarItem: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
-  <button onClick={onClick} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ${active ? 'bg-gray-900 text-white shadow-lg shadow-gray-200' : 'text-gray-500 hover:bg-gray-50'}`}>
-      <Icon size={20} />
-      <span className="font-bold text-sm">{label}</span>
-  </button>
-);
-
-export default App;
+const NavBtn

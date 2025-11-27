@@ -1,18 +1,17 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Phone, ArrowRight, User, MapPin, Camera, Check, ChevronLeft, Upload, Briefcase, Mail, FileText, Crosshair, Loader2, Plus, Navigation, Map } from 'lucide-react';
-import { Button, Input, TextArea, Modal, VerificationCard, LoadingButton } from '../components/UIComponents';
+import { Phone, ArrowRight, User, MapPin, Camera, Check, ChevronLeft, Upload, Briefcase, Mail, FileText, Crosshair, Loader2, Plus, Navigation, Map, Snowflake, Gift } from 'lucide-react';
+import { Button, Input, TextArea, Modal, VerificationCard, LoadingButton, Snowfall } from '../components/UIComponents';
 import { CATEGORIES, PRICING_UNITS, BANKS_BOLIVIA, WALLETS_BOLIVIA, COLORS } from '../constants';
 import { UserData, Tariff, PaymentMethod } from '../types';
 import { TermsContent } from './ClientFlow';
 import { storage, db } from '../firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, setDoc } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
 
 interface LoginProps {
   onLogin: (type: 'CLIENT' | 'PROVIDER', initialData?: Partial<UserData>) => void;
   onSocialLogin: (provider: 'google' | 'facebook') => Promise<void>;
-  currentUser?: any; // Added currentUser prop
 }
 
 // Custom Icons for aesthetic buttons
@@ -32,13 +31,22 @@ const FacebookIcon = () => (
   </svg>
 );
 
+const SantaHatIcon = () => (
+    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
+        <path d="M12 3C9 3 6 5 5 8C5 10 7 12 7 14C7 16 6 18 5 20C5 21.5 6.5 23 8.5 23H15.5C17.5 23 19 21.5 19 20C18 18 17 16 17 14C17 12 19 10 19 8C17.5 5 14.5 3 11 3" fill="#DC2626" stroke="#B91C1C" strokeWidth="1.5"/>
+        <circle cx="20" cy="22" r="2.5" fill="white" stroke="#E5E7EB"/>
+        <path d="M5 20C5 20 8 19 12 19C16 19 19 20 19 20" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+        <circle cx="11" cy="3" r="2.5" fill="white" stroke="#E5E7EB"/>
+    </svg>
+);
+
 const BOLIVIA_CITIES = [
   "Santa Cruz de la Sierra", "Puerto Quijarro", "Puerto Suárez", "La Paz", "El Alto", 
   "Cochabamba", "Oruro", "Sucre", "Tarija", "Potosí", "Trinidad", "Cobija", 
   "Montero", "Warnes", "Cotoca", "Yacuiba", "Riberalta", "Viacha"
 ];
 
-export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin, currentUser }) => {
+export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) => {
   const [step, setStep] = useState<'LANDING' | 'DETAILS' | 'PHOTO'>('LANDING');
   const [tempData, setTempData] = useState({ name: '', location: '', phone: '', email: '', image: '' });
   
@@ -112,53 +120,49 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin, curr
     }
   };
 
-  const saveClientProfile = async () => {
-      if (!currentUser?.uid) {
-          onLogin('CLIENT', tempData);
-          return;
-      }
-      try {
-          // SAVE TO FIRESTORE 'users' COLLECTION
-          // Using setDoc with { merge: true } prevents duplicates and just updates existing info
-          await setDoc(doc(db, "users", currentUser.uid), {
-              ...tempData,
-              uid: currentUser.uid,
-              userType: 'CLIENT',
-              lastLogin: new Date().toISOString()
-          }, { merge: true });
-          
-          console.log("Client profile saved to Cloud");
-          onLogin('CLIENT', tempData);
-      } catch (error) {
-          console.error("Error saving client profile:", error);
-          onLogin('CLIENT', tempData); // Proceed anyway locally
-      }
-  };
-
   if (step === 'LANDING') {
     return (
-      <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-gray-300 relative overflow-hidden items-center justify-center">
-        {/* Abstract Background Shapes */}
-        <div className="absolute top-[-50px] left-[-50px] w-96 h-96 bg-blue-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob"></div>
-        <div className="absolute bottom-[-50px] right-[-50px] w-96 h-96 bg-purple-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob animation-delay-2000"></div>
+      <div className="flex flex-col min-h-screen bg-gray-50 relative overflow-hidden items-center justify-center">
+        {/* Christmas Background - Red and Green Glows */}
+        <div className="absolute inset-0 bg-gradient-to-b from-red-50 to-gray-200"></div>
+        <div className="absolute top-[-50px] left-[-50px] w-96 h-96 bg-red-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob"></div>
+        <div className="absolute bottom-[-50px] right-[-50px] w-96 h-96 bg-emerald-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob animation-delay-2000"></div>
+        <div className="absolute top-[30%] left-[50%] w-64 h-64 bg-amber-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob animation-delay-4000"></div>
         
+        <Snowfall />
+
         <div className="w-full max-w-sm p-6 relative z-10">
           {/* 3D Card Container */}
-          <div className="bg-white/80 backdrop-blur-xl w-full rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] border border-white/50 p-8 flex flex-col items-center">
-            {/* Logo */}
-            <div className="relative mb-8 group cursor-pointer">
-              <div className="absolute inset-0 bg-black rounded-3xl blur-md opacity-30 translate-y-2 group-hover:translate-y-3 transition-transform duration-500"></div>
-              <div className="w-24 h-24 bg-gray-900 rounded-3xl flex items-center justify-center relative z-10 shadow-inner border-t border-gray-700 transform group-hover:-translate-y-1 transition-transform duration-500">
-                <span className="text-white text-5xl font-black" style={{ textShadow: '2px 4px 6px rgba(0,0,0,0.5)' }}>S</span>
+          <div className="bg-white/90 backdrop-blur-xl w-full rounded-[32px] shadow-[0_20px_50px_-12px_rgba(220,38,38,0.3)] border border-white/50 p-8 flex flex-col items-center relative">
+            
+            {/* Hanging Ornament Decoration */}
+            <div className="absolute top-0 left-8 w-1 h-12 bg-red-300"></div>
+            <div className="absolute top-12 left-6 w-5 h-5 rounded-full bg-red-500 shadow-md animate-bounce"></div>
+
+            {/* Logo with Christmas Hat */}
+            <div className="relative mb-8 group cursor-pointer mt-4">
+              <div className="absolute -top-7 -right-5 transform rotate-12 z-20 scale-110">
+                 <SantaHatIcon />
+              </div>
+              <div className="absolute inset-0 bg-red-600 rounded-3xl blur-md opacity-40 translate-y-2 group-hover:translate-y-3 transition-transform duration-500"></div>
+              <div className="w-24 h-24 bg-gradient-to-br from-red-600 to-red-800 rounded-3xl flex items-center justify-center relative z-10 shadow-inner border-t-4 border-white transform group-hover:-translate-y-1 transition-transform duration-500 overflow-hidden">
+                {/* Snow on top of box */}
+                <div className="absolute top-0 left-0 right-0 h-2 bg-white/90 rounded-b-xl"></div>
+                <span className="text-white text-5xl font-black drop-shadow-md relative z-10 pt-2">S</span>
               </div>
             </div>
 
-            <h1 className="text-3xl font-black text-gray-900 tracking-tighter mb-1 drop-shadow-sm">THE SOURCE</h1>
-            <p className="text-[10px] font-bold text-blue-600 tracking-[0.3em] mb-10 uppercase bg-blue-50 px-3 py-1 rounded-full border border-blue-100">Solutions App</p>
+            <h1 className="text-3xl font-black tracking-tighter mb-1 drop-shadow-sm flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-red-700 via-red-600 to-amber-600">
+                THE SOURCE
+            </h1>
+            <p className="text-[10px] font-bold text-red-700 tracking-[0.3em] mb-10 uppercase bg-red-50 px-3 py-1 rounded-full border border-red-100 flex items-center gap-2">
+                <Gift size={12} />
+                Holiday Edition
+            </p>
 
             <div className="w-full space-y-4">
               <div className="relative group">
-                <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
+                <div className="absolute -inset-0.5 bg-gradient-to-r from-red-600 to-green-600 rounded-2xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
                 <div className="relative bg-white rounded-2xl">
                    <Input 
                       icon={Phone} 
@@ -188,14 +192,14 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin, curr
               </button>
 
               <div className="pt-4">
-                <Button onClick={() => setStep('DETAILS')} fullWidth icon={ArrowRight} className="bg-gray-900 hover:bg-black shadow-xl shadow-gray-400/50">
+                <Button onClick={() => setStep('DETAILS')} fullWidth icon={ArrowRight} className="bg-gray-900 hover:bg-black shadow-xl shadow-gray-400/50" variant="christmas">
                   Iniciar Sesión
                 </Button>
               </div>
 
               <div className="mt-4 text-center">
                  <p className="text-gray-400 text-xs mb-1">¿Aún no eres parte?</p>
-                 <button onClick={() => setStep('DETAILS')} className="text-gray-900 font-black text-sm hover:underline tracking-wide">
+                 <button onClick={() => setStep('DETAILS')} className="text-red-700 font-black text-sm hover:underline tracking-wide">
                    CREAR CUENTA
                  </button>
               </div>
@@ -214,10 +218,14 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin, curr
   if (step === 'DETAILS') {
     return (
       <div className="flex flex-col min-h-screen bg-white p-6 pt-12 items-center justify-center animate-in fade-in slide-in-from-right duration-300">
-         <div className="w-full max-w-md">
+         <Snowfall />
+         <div className="w-full max-w-md relative z-10">
             <div className="mb-8 flex flex-col items-center text-center">
-                <h2 className="text-2xl font-bold text-gray-900">¡Bienvenido!</h2>
-                <p className="text-blue-600 font-bold text-sm bg-blue-50 px-3 py-1 rounded-full mb-2">Creando perfil de Cliente</p>
+                <div className="mb-4 text-red-500 animate-bounce">
+                    <Gift size={40} />
+                </div>
+                <h2 className="text-2xl font-bold text-gray-900">¡Felices Fiestas!</h2>
+                <p className="text-red-600 font-bold text-sm bg-red-50 px-3 py-1 rounded-full mb-2">Creando perfil de Cliente</p>
                 <p className="text-gray-500 text-sm">Verificaremos tu perfil en unos segundos.</p>
             </div>
             <div className="space-y-4">
@@ -231,15 +239,14 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin, curr
                     <MapPin size={20} />
                   </div>
                   <input 
-                    className="w-full bg-white border border-gray-200 text-gray-900 text-base rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none py-3.5 pl-12 pr-12 placeholder:text-gray-400 transition-all"
+                    className="w-full bg-white border border-gray-200 text-gray-900 text-base rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none py-3.5 pl-12 pr-12 placeholder:text-gray-400 transition-all"
                     placeholder="Escribe tu ciudad o barrio..."
                     value={tempData.location}
                     onChange={handleLocationChange}
                   />
                   <button 
-                      type="button"
                       onClick={handleGPSLocation}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 rounded-xl transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-xl transition-colors"
                       title="Usar GPS"
                   >
                       {isLocating ? <Loader2 size={18} className="animate-spin" /> : <Crosshair size={18} />}
@@ -249,7 +256,6 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin, curr
                   <div className="absolute z-50 w-full bg-white border border-gray-100 rounded-xl shadow-xl mt-2 max-h-40 overflow-y-auto animate-in fade-in zoom-in duration-200">
                     {suggestions.map((city, idx) => (
                       <button
-                        type="button"
                         key={idx}
                         onClick={() => selectSuggestion(city)}
                         className="w-full text-left px-4 py-3 hover:bg-gray-50 text-sm text-gray-700 font-medium flex items-center gap-2 border-b border-gray-50 last:border-0"
@@ -262,7 +268,7 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin, curr
                 )}
               </div>
 
-              <Button fullWidth onClick={() => setStep('PHOTO')} disabled={!tempData.name || !tempData.location}>Continuar</Button>
+              <Button fullWidth onClick={() => setStep('PHOTO')} disabled={!tempData.name || !tempData.location} variant="christmas">Continuar</Button>
             </div>
          </div>
       </div>
@@ -271,8 +277,12 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin, curr
 
   if (step === 'PHOTO') {
     return (
-      <div className="flex flex-col min-h-screen bg-gray-50 p-6 items-center justify-center animate-in fade-in zoom-in duration-500">
-          <div className="w-full max-w-sm flex flex-col items-center bg-white p-8 rounded-[40px] shadow-2xl shadow-gray-200 border border-white">
+      <div className="flex flex-col min-h-screen bg-gray-50 p-6 items-center justify-center animate-in fade-in zoom-in duration-500 relative overflow-hidden">
+          <Snowfall />
+          <div className="absolute top-0 right-0 w-64 h-64 bg-red-100 rounded-full blur-3xl opacity-50"></div>
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-green-100 rounded-full blur-3xl opacity-50"></div>
+
+          <div className="w-full max-w-sm flex flex-col items-center bg-white p-8 rounded-[40px] shadow-2xl shadow-red-100 border border-white relative z-10">
             <h2 className="text-2xl font-black text-gray-900 mb-2">Tu Foto de Perfil</h2>
             <p className="text-gray-400 mb-8 text-center text-sm font-medium">Personaliza tu experiencia. Es opcional.</p>
             
@@ -285,27 +295,26 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin, curr
             />
 
             <button 
-              type="button"
               onClick={() => photoInputRef.current?.click()}
               disabled={uploadingPhoto}
               className={`w-40 h-40 rounded-full flex flex-col items-center justify-center mb-10 transition-all duration-500 relative group shadow-2xl ${
                 tempData.image && !tempData.image.includes('dicebear')
                   ? 'bg-white' 
-                  : 'bg-gradient-to-br from-gray-50 to-gray-100 hover:from-white hover:to-white'
+                  : 'bg-gradient-to-br from-red-50 to-red-100 hover:from-white hover:to-white'
               }`}
             >
-                <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full opacity-20 group-hover:opacity-40 blur transition duration-500"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-red-400 to-green-400 rounded-full opacity-20 group-hover:opacity-40 blur transition duration-500"></div>
                 
                 <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-white flex items-center justify-center bg-white">
                   {uploadingPhoto ? (
                       <div className="flex flex-col items-center gap-2">
-                        <Loader2 size={32} className="animate-spin text-blue-600" />
-                        <span className="text-[10px] font-bold text-blue-600">SUBIENDO</span>
+                        <Loader2 size={32} className="animate-spin text-red-600" />
+                        <span className="text-[10px] font-bold text-red-600">SUBIENDO</span>
                       </div>
                   ) : tempData.image && !tempData.image.includes('dicebear') ? (
                       <img src={tempData.image} alt="Uploaded" className="w-full h-full object-cover" />
                   ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-6xl shadow-inner">
+                      <div className="w-full h-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white font-black text-6xl shadow-inner">
                          {tempData.name.charAt(0).toUpperCase()}
                       </div>
                   )}
@@ -317,13 +326,13 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin, curr
                   )}
                 </div>
 
-                <div className="absolute bottom-2 right-2 bg-black text-white p-2 rounded-full shadow-lg border-2 border-white transform group-hover:scale-110 transition-transform">
+                <div className="absolute bottom-2 right-2 bg-green-600 text-white p-2 rounded-full shadow-lg border-2 border-white transform group-hover:scale-110 transition-transform">
                    <Plus size={16} />
                 </div>
             </button>
 
             <div className="w-full space-y-3">
-              <Button fullWidth onClick={saveClientProfile} disabled={uploadingPhoto} className="h-14 text-lg bg-gray-900 hover:bg-black shadow-xl shadow-gray-300">
+              <Button fullWidth onClick={() => onLogin('CLIENT', tempData)} disabled={uploadingPhoto} className="h-14 text-lg bg-gray-900 hover:bg-black shadow-xl shadow-red-100" variant="christmas">
                  {tempData.image ? 'Finalizar Registro' : 'Continuar sin foto'}
               </Button>
               
@@ -478,68 +487,68 @@ export const ProviderOnboarding: React.FC<{
 
       const uniqueName = `${Date.now()}_${file.name}`;
 
-      try {
-        if (type === 'ID_FRONT') {
-            setUploadingIdFront(true);
-            const url = await uploadImageToFirebase(file, `documents/id_front/${uniqueName}`);
-            setFormData(prev => ({ ...prev, idFront: url }));
-        } else if (type === 'ID_BACK') {
-            setUploadingIdBack(true);
-            const url = await uploadImageToFirebase(file, `documents/id_back/${uniqueName}`);
-            setFormData(prev => ({ ...prev, idBack: url }));
-        } else if (type === 'CV') {
-            setUploadingCV(true);
-            const url = await uploadImageToFirebase(file, `documents/cv/${uniqueName}`);
-            setFormData(prev => ({ ...prev, cv: url }));
-        } else if (type === 'QR') {
-            setUploadingQR(true);
-            const url = await uploadImageToFirebase(file, `payments/qr/${uniqueName}`);
-            setQrUrl(url);
-            alert("QR subido correctamente. Ahora puedes agregar el método de pago.");
-        }
-      } catch (error) {
-        console.error("File upload failed", error);
-      } finally {
-        // Stop spinners safely
-        setUploadingIdFront(false);
-        setUploadingIdBack(false);
-        setUploadingCV(false);
-        setUploadingQR(false);
+      if (type === 'ID_FRONT') {
+          setUploadingIdFront(true);
+          try {
+              const url = await uploadImageToFirebase(file, `documents/id_front/${uniqueName}`);
+              setFormData(prev => ({ ...prev, idFront: url }));
+          } finally {
+              setUploadingIdFront(false);
+          }
+      } else if (type === 'ID_BACK') {
+          setUploadingIdBack(true);
+          try {
+              const url = await uploadImageToFirebase(file, `documents/id_back/${uniqueName}`);
+              setFormData(prev => ({ ...prev, idBack: url }));
+          } finally {
+              setUploadingIdBack(false);
+          }
+      } else if (type === 'CV') {
+          setUploadingCV(true);
+          try {
+              const url = await uploadImageToFirebase(file, `documents/cv/${uniqueName}`);
+              setFormData(prev => ({ ...prev, cv: url }));
+          } finally {
+              setUploadingCV(false);
+          }
+      } else if (type === 'QR') {
+          setUploadingQR(true);
+          try {
+              const url = await uploadImageToFirebase(file, `payments/qr/${uniqueName}`);
+              setQrUrl(url);
+              alert("QR subido correctamente. Ahora puedes agregar el método de pago.");
+          } finally {
+              setUploadingQR(false);
+          }
       }
   };
 
   const handleSmartSubmit = async () => {
-    console.log("Guardando datos..."); // DEBUG LOG
     setSubmitStage('ENCRYPTING');
-    
-    // --- ANTI-DUPLICATE VALIDATION ---
-    try {
-      if (formData.phone) {
-        const phoneQuery = query(collection(db, "solicitudes_servicio"), where("phone", "==", formData.phone));
-        const phoneSnapshot = await getDocs(phoneQuery);
-        
-        const isDuplicate = phoneSnapshot.docs.some(doc => {
-           const data = doc.data();
-           // Check if duplicate belongs to DIFFERENT user (allow self-update)
-           return data.uid !== currentUser?.uid;
-        });
-
-        if (isDuplicate) {
-           alert("⛔ Este número de celular ya está registrado por otro usuario.");
-           setSubmitStage('IDLE');
-           return; // STOP SUBMISSION
-        }
-      }
-    } catch (e) {
-      console.error("Validation check failed", e);
-      // Continue cautiously or stop? We continue but log it.
-    }
-    // ---------------------------------
-
     await new Promise(r => setTimeout(r, 1000));
     setSubmitStage('UPLOADING');
     
     try {
+        // Anti-Duplicate Phone Check
+        if (formData.phone) {
+            const q = query(collection(db, "solicitudes_servicio"), where("phone", "==", formData.phone));
+            const querySnapshot = await getDocs(q);
+            
+            // Check if found doc is NOT current user (duplicate)
+            let isDuplicate = false;
+            querySnapshot.forEach((doc) => {
+                if (doc.data().uid !== currentUser?.uid) {
+                    isDuplicate = true;
+                }
+            });
+
+            if (isDuplicate) {
+                alert("⛔ Este número de celular ya está registrado por otro usuario.");
+                setSubmitStage('IDLE');
+                return; // STOP EXECUTION
+            }
+        }
+
         const finalData = { 
             ...formData, 
             uid: currentUser?.uid,
@@ -548,6 +557,8 @@ export const ProviderOnboarding: React.FC<{
             latitude: locationCoords?.latitude,
             longitude: locationCoords?.longitude
         };
+
+        console.log("Guardando datos...", finalData);
 
         if (docId) {
             await updateDoc(doc(db, "solicitudes_servicio", docId), finalData);
@@ -564,8 +575,8 @@ export const ProviderOnboarding: React.FC<{
         onComplete(formData);
         
     } catch (error) {
-        console.error("Error saving profile:", error); // DEBUG ERROR
-        alert("Error al guardar perfil: " + (error as any).message);
+        console.error("Error saving profile:", error);
+        alert("Error al guardar perfil. Revisa la consola.");
         setSubmitStage('IDLE');
     }
   };
@@ -849,7 +860,7 @@ export const ProviderOnboarding: React.FC<{
                 disabled={!formData.acceptedTerms} 
              />
           ) : (
-            <Button fullWidth onClick={() => setStep(step + 1)} disabled={step === 1 && !locationCoords} type="button">
+            <Button fullWidth onClick={() => setStep(step + 1)} disabled={step === 1 && !locationCoords} variant="christmas">
               {step === 1 && !locationCoords ? 'Requiere Ubicación' : 'Continuar'}
             </Button>
           )}
