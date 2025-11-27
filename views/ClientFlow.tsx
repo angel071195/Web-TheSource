@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
 import { Search, MapPin, Star, Calculator, Share2, Flag, MessageCircle, ChevronRight, CreditCard, HelpCircle, FileText, Filter, User, ArrowLeft, ShieldCheck, Mail, Grid, List, Briefcase, Phone, Camera, Lock, Loader2, Crosshair, Navigation, Check, Gift, Snowflake } from 'lucide-react';
-import { Button, Input, Modal, Badge, TextArea, Snowfall } from '../components/UIComponents';
+import { Button, Input, Modal, Badge, TextArea } from '../components/UIComponents';
 import { CATEGORIES, AVATARS } from '../constants';
 import { Provider, UserData, ViewState } from '../types';
 import { storage } from '../firebaseConfig';
@@ -18,7 +18,7 @@ interface HomeProps {
 export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectProvider, onToggleSearch, onNavigate }) => {
   return (
     <div className="w-full max-w-7xl mx-auto">
-      {/* Header */}
+      {/* Header - Christmas Theme */}
       <div className="p-6 flex justify-between items-start bg-white/80 backdrop-blur-md sticky top-0 z-10 border-b border-gray-100 lg:bg-transparent lg:border-none lg:static">
          <div>
             <div className="flex items-center gap-1 mb-1">
@@ -28,12 +28,10 @@ export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectPro
                <MapPin size={14} className="text-red-500" />
                <span className="text-sm font-bold text-gray-800">{userData.location || 'Seleccionar Ubicación'}</span>
             </div>
-            <div className="lg:hidden">
-                <h1 className="text-xl font-black tracking-tighter flex items-center gap-1 text-transparent bg-clip-text bg-gradient-to-r from-red-700 to-red-600">
-                    THE SOURCE
-                    <Gift size={16} className="text-red-600" />
-                </h1>
-                <p className="text-[10px] font-bold text-red-600 tracking-widest uppercase">Holiday Edition</p>
+            <div className="lg:hidden flex items-center gap-2">
+                <h1 className="text-xl font-black text-red-700 tracking-tighter drop-shadow-sm">THE SOURCE</h1>
+                <Snowflake size={16} className="text-blue-300 animate-pulse" />
+                <p className="text-[10px] font-bold text-green-600 tracking-widest uppercase hidden">Solutions App</p>
             </div>
          </div>
          <button onClick={onToggleSearch} className="p-2.5 bg-white border border-gray-200 rounded-full hover:bg-gray-50 transition-colors shadow-sm">
@@ -42,19 +40,22 @@ export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectPro
       </div>
 
       <div className="p-6">
-          {/* Christmas Banner */}
-          <div className="mb-8 p-8 bg-gradient-to-br from-red-700 to-red-900 rounded-[32px] relative overflow-hidden shadow-xl shadow-red-200 flex flex-col justify-center min-h-[180px]">
-             <Snowfall />
-             <div className="relative z-10 max-w-md text-white">
+          {/* Banner - Christmas Edition */}
+          <div className="mb-8 p-8 bg-gradient-to-r from-red-700 to-red-900 rounded-[32px] relative overflow-hidden shadow-xl shadow-red-200 flex flex-col justify-center min-h-[180px] border-2 border-yellow-500/20">
+             <div className="relative z-10 max-w-md">
                 <div className="flex items-center gap-2 mb-2">
-                    <Gift className="text-yellow-400 animate-bounce" size={24} />
-                    <h3 className="font-bold text-2xl">Regala soluciones</h3>
+                    <Gift className="text-yellow-400" size={24} />
+                    <h3 className="text-white font-bold text-2xl">¿Buscas algo especial?</h3>
                 </div>
-                <p className="text-red-100 text-sm mb-6">Esta Navidad, encuentra al experto ideal para que todo brille en tu hogar.</p>
-                <button onClick={() => onNavigate('REQUEST_SERVICE')} className="bg-white text-red-700 px-6 py-3 rounded-xl text-sm font-bold hover:bg-red-50 transition-colors shadow-lg">Publicar Solicitud</button>
+                <p className="text-red-100 text-sm mb-6 font-medium">Publica tu solicitud y recibe ofertas de expertos en minutos.</p>
+                <button onClick={() => onNavigate('REQUEST_SERVICE')} className="bg-white text-red-700 px-6 py-3 rounded-xl text-sm font-bold hover:bg-green-50 transition-colors shadow-lg border border-green-100">Publicar Solicitud</button>
              </div>
-             <div className="absolute -right-10 -bottom-10 opacity-20 rotate-12">
-                 <Snowflake size={200} className="text-white" />
+             {/* Decorative Background Elements */}
+             <div className="absolute -right-10 -bottom-10 opacity-10 rotate-12 text-white">
+                 <Search size={200} />
+             </div>
+             <div className="absolute top-0 right-0 p-4 opacity-20">
+                 <Snowflake size={100} className="text-white" />
              </div>
           </div>
 
@@ -62,16 +63,16 @@ export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectPro
           <div className="mb-10">
              <div className="flex justify-between items-end mb-6">
                 <h2 className="text-xl font-bold text-gray-900">Categorías</h2>
-                <button onClick={() => onNavigate('SEARCH')} className="text-red-600 text-sm font-bold hover:underline">Ver todas</button>
+                <button onClick={() => onNavigate('SEARCH')} className="text-blue-600 text-sm font-bold hover:underline">Ver todas</button>
              </div>
              
              <div className="flex overflow-x-auto gap-4 no-scrollbar pb-4 -mx-6 px-6 lg:mx-0 lg:px-0 lg:grid lg:grid-cols-6 xl:grid-cols-8">
                 {CATEGORIES.map((cat, i) => (
                    <button key={cat.id} onClick={() => onNavigate('SEARCH')} className="flex flex-col items-center gap-3 min-w-[80px] group transition-all">
-                      <div className={`w-20 h-20 rounded-2xl flex items-center justify-center border transition-all group-hover:scale-105 group-hover:shadow-md ${i === 0 ? 'bg-red-50 border-red-200 text-red-600' : 'bg-white border-gray-200 text-gray-500 group-hover:border-red-300'}`}>
+                      <div className={`w-20 h-20 rounded-2xl flex items-center justify-center border transition-all group-hover:scale-105 group-hover:shadow-md ${i === 0 ? 'bg-blue-50 border-blue-200 text-blue-600' : 'bg-white border-gray-200 text-gray-500 group-hover:border-gray-300'}`}>
                          {cat.icon}
                       </div>
-                      <span className={`text-xs font-bold ${i===0 ? 'text-red-600' : 'text-gray-500 group-hover:text-gray-800'}`}>{cat.label.split(' ')[0]}</span>
+                      <span className={`text-xs font-bold ${i===0 ? 'text-blue-600' : 'text-gray-500 group-hover:text-gray-800'}`}>{cat.label.split(' ')[0]}</span>
                    </button>
                 ))}
              </div>
@@ -85,11 +86,8 @@ export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectPro
                    <div 
                      key={p.id} 
                      onClick={() => onSelectProvider(p)}
-                     className="bg-white p-4 rounded-[24px] flex md:flex-col gap-4 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer border border-gray-100 group relative overflow-hidden"
+                     className="bg-white p-4 rounded-[24px] flex md:flex-col gap-4 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer border border-gray-100 group"
                    >
-                      {/* Gold border accent for holiday */}
-                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-yellow-400 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-
                       <div className="w-24 h-24 md:w-full md:h-48 rounded-2xl overflow-hidden bg-gray-100 relative">
                           <img src={p.image} alt={p.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                           <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg flex items-center gap-1 shadow-sm">
@@ -104,7 +102,7 @@ export const HomeView: React.FC<HomeProps> = ({ userData, providers, onSelectPro
                                 <h3 className="font-bold text-gray-900 text-lg">{p.name}</h3>
                                 <p className="text-xs text-gray-500 font-medium">{p.professions[0]}</p>
                             </div>
-                            {p.isVerified && <Badge color="gold">✓</Badge>}
+                            {p.isVerified && <Badge color="blue">✓</Badge>}
                          </div>
                          
                          <div className="mt-auto pt-3 flex items-center gap-2">
@@ -236,12 +234,14 @@ export const RequestServiceView: React.FC<{ onSubmit: () => void }> = ({ onSubmi
     );
 };
 
-export const ProfileDetail: React.FC<{ provider: Provider, onBack: () => void, onSendRequest: (msg: string) => void }> = ({ provider, onBack, onSendRequest }) => {
+export const ProfileDetail: React.FC<{ provider: Provider, onBack: () => void, onSendRequest: (msg: string) => void, onReport: (complaint: any) => void }> = ({ provider, onBack, onSendRequest, onReport }) => {
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [showSimModal, setShowSimModal] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
   const [msg, setMsg] = useState('');
   const [simAmount, setSimAmount] = useState('');
+  const [reportReason, setReportReason] = useState('Comportamiento inapropiado');
+  const [reportDetails, setReportDetails] = useState('');
 
   const calculatePoints = () => {
       const num = parseFloat(simAmount);
@@ -255,7 +255,11 @@ export const ProfileDetail: React.FC<{ provider: Provider, onBack: () => void, o
   };
 
   const submitReport = () => {
-    alert("Reporte enviado. Gracias por ayudarnos a mantener la comunidad segura.");
+    onReport({
+        reportedUser: provider.name,
+        reason: reportReason,
+        details: reportDetails
+    });
     setShowReportModal(false);
   };
 
@@ -388,13 +392,22 @@ export const ProfileDetail: React.FC<{ provider: Provider, onBack: () => void, o
        <Modal isOpen={showReportModal} onClose={() => setShowReportModal(false)} title="Reportar Usuario">
            <div className="space-y-4">
               <p className="text-sm text-gray-500">Por favor, selecciona el motivo de tu reporte. Esto nos ayuda a mantener segura la comunidad.</p>
-              <select className="w-full p-3 rounded-xl border border-gray-200 bg-white outline-none">
+              <select 
+                className="w-full p-3 rounded-xl border border-gray-200 bg-white outline-none"
+                value={reportReason}
+                onChange={(e) => setReportReason(e.target.value)}
+              >
                   <option>Comportamiento inapropiado</option>
                   <option>Perfil falso</option>
                   <option>Estafa o Fraude</option>
                   <option>Otro</option>
               </select>
-              <TextArea placeholder="Describe los detalles (opcional)..." className="min-h-[80px]" />
+              <TextArea 
+                placeholder="Describe los detalles (opcional)..." 
+                className="min-h-[80px]"
+                value={reportDetails}
+                onChange={(e) => setReportDetails(e.target.value)}
+              />
               <div className="flex gap-3">
                   <Button variant="outline" fullWidth onClick={() => setShowReportModal(false)}>Cancelar</Button>
                   <Button fullWidth onClick={submitReport} className="bg-red-600 hover:bg-red-700 border-none">Enviar Reporte</Button>

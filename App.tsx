@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, Search, PlusSquare, User, Inbox, Grid, Monitor, Wallet, LogOut, Menu, Snowflake } from 'lucide-react';
+import { Home, Search, PlusSquare, User, Inbox, Grid, Monitor, Wallet, LogOut, Menu } from 'lucide-react';
 import { ViewState, UserType, UserData, Provider, Lead, AdminData, JobPost, UserDocument } from './types';
 import { INITIAL_PROVIDERS } from './constants';
 import emailjs from '@emailjs/browser';
@@ -11,19 +11,26 @@ import { LoginScreen, ProviderOnboarding } from './views/AuthFlow';
 import { HomeView, ProfileDetail, ClientProfileView, RequestServiceView, SearchView, TermsView } from './views/ClientFlow';
 import { WorkerDashboard, WalletView, MyServicesPanel, JobClosingSimulation, OpportunitiesView, LeadDetailView } from './views/ProviderFlow';
 import { AdminDashboard } from './views/AdminFlow';
-import { Snowfall } from './components/UIComponents';
 
 // EMAILJS CONFIGURATION - REAL PRODUCTION CREDENTIALS
 const EMAIL_SERVICE_ID = "service_ytz8gpd";
 const EMAIL_TEMPLATE_ID = "template_gkqblyu";
 const EMAIL_PUBLIC_KEY = "9DpJRC-7vdu7TOeXl";
 
+const SantaHatIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 100 100" className="absolute -top-3 -right-2 rotate-12 z-20">
+    <path d="M10,80 Q50,10 90,80" fill="#dc2626" />
+    <circle cx="90" cy="80" r="10" fill="white" />
+    <rect x="5" y="75" width="90" height="15" rx="8" fill="white" />
+  </svg>
+);
+
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('LOGIN');
   const [userType, setUserType] = useState<UserType>('CLIENT');
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null); // Firebase User
-  const [authLoading, setAuthLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true); // Critical for avoiding refresh bug
   
   // App State
   const [userData, setUserData] = useState<UserData>({
@@ -82,54 +89,47 @@ const App: React.FC = () => {
           {id: 'tx2', workerName: 'Ana Flores', amount: 20, date: 'Ayer', status: 'pending', proofUrl: ''}
       ],
       jobAudits: [{id: 'jb1', service: 'Limpieza', amount: 100, warning: false, client: 'Maria'}, {id: 'jb2', service: 'Plomería', amount: 10, warning: true, client: 'Pedro'}],
-      revenue: 1500
+      revenue: 1500,
+      complaints: []
   });
 
   const [showBonusModal, setShowBonusModal] = useState(false);
   const [bonusAmount, setBonusAmount] = useState(0);
 
-  // Monitor Auth State
+  // Monitor Auth State & Admin Security (Firebase Auth)
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       setCurrentUser(user);
+      
       if (user) {
+        // Update local user data
         setUserData(prev => ({ ...prev, email: user.email || prev.email }));
         
-        // ADMIN CHECK (Exact Match)
-        const ADMIN_EMAIL = "elderangelo071195@gmail.com";
-        if (user.email && user.email.trim().toLowerCase() === ADMIN_EMAIL) {
-            setIsAdmin(true);
-        } else {
-            setIsAdmin(false);
-        }
-
-        // Auto-redirect if on login screen
+        // Auto-redirect if on LOGIN screen
         if (currentView === 'LOGIN') {
             setCurrentView('HOME');
         }
       }
-      setAuthLoading(false);
+      setAuthLoading(false); // Stop loading screen
     });
     return () => unsubscribe();
   }, [currentView]);
+
+  // Monitor UserData Email for Admin Access (Manual + Social)
+  useEffect(() => {
+      const ADMIN_EMAIL = "elderangelo071195@gmail.com";
+      // Check strictly against the email stored in userData (works for both Google and Manual login)
+      if (userData.email && userData.email.trim().toLowerCase() === ADMIN_EMAIL) {
+          setIsAdmin(true);
+      } else {
+          setIsAdmin(false);
+      }
+  }, [userData.email]);
 
   // Scroll to top when view changes
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentView]);
-
-  const processLogin = (user: any) => {
-      console.log("Social Login Success:", user.email);
-      
-      setUserData(prev => ({
-        ...prev,
-        name: user.displayName || prev.name,
-        email: user.email || prev.email,
-        image: user.photoURL || prev.image
-      }));
-      
-      setCurrentView(userType === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
-  };
 
   const handleSocialLogin = async (providerName: 'google' | 'facebook') => {
     if (providerName === 'facebook') {
@@ -140,13 +140,22 @@ const App: React.FC = () => {
     try {
       const provider = googleProvider;
       const result = await signInWithPopup(auth, provider);
-      processLogin(result.user);
+      const user = result.user;
+      
+      console.log("Social Login Success:", user.email);
+      
+      setUserData(prev => ({
+        ...prev,
+        name: user.displayName || prev.name,
+        email: user.email || prev.email,
+        image: user.photoURL || prev.image
+      }));
+      
+      // Redirect handled by onAuthStateChanged
+      return user;
     } catch (error: any) {
       console.error("Social login error:", error);
-      
-      const errorMessage = typeof error === 'object' && error !== null && 'message' in error 
-        ? (error as any).message 
-        : 'Error desconocido';
+      const errorMessage = typeof error === 'object' && error.message ? error.message : JSON.stringify(error);
 
       if (error.code === 'auth/unauthorized-domain') {
           // FALLBACK FOR PREVIEW ENVIRONMENTS
@@ -157,12 +166,14 @@ const App: React.FC = () => {
                  email: "usuario@prueba.com",
                  photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
              };
-             processLogin(mockUser);
+             setUserData(prev => ({ ...prev, name: mockUser.displayName, email: mockUser.email, image: mockUser.photoURL }));
+             
+             // Proceed to app
+             navigateTo(userType === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
              return;
           }
       } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
           console.log("User closed popup");
-          // Do nothing, just let them try again
       } else {
           alert(`Error al iniciar sesión: ${errorMessage}`);
       }
@@ -282,6 +293,25 @@ const App: React.FC = () => {
       // Update logic would go here
   };
 
+  const handleReport = (complaint: any) => {
+      const newComplaint = {
+          id: `comp_${Date.now()}`,
+          reporter: userData.name,
+          reportedUser: complaint.reportedUser,
+          reason: complaint.reason,
+          details: complaint.details,
+          date: new Date().toLocaleDateString(),
+          status: 'PENDING' as 'PENDING'
+      };
+      
+      setAdminData(prev => ({
+          ...prev,
+          complaints: [...(prev.complaints || []), newComplaint]
+      }));
+      
+      alert("Reporte enviado al administrador.");
+  };
+
   const calculateBonus = () => {
     const rand = Math.random() * 100;
     if (rand < 4) return 25;
@@ -291,16 +321,21 @@ const App: React.FC = () => {
     return 5;
   };
 
-  const renderContent = () => {
-    if (authLoading) {
-        return (
-            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white">
-                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-                <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Cargando The Source...</p>
-            </div>
-        );
-    }
+  // LOADING STATE (Prevents Admin Bug on Refresh)
+  if (authLoading) {
+      return (
+          <div className="min-h-screen w-full bg-gray-900 flex flex-col items-center justify-center text-white">
+              <div className="relative w-24 h-24 mb-8">
+                  <div className="absolute inset-0 border-t-4 border-blue-500 rounded-full animate-spin"></div>
+                  <div className="absolute inset-2 border-t-4 border-purple-500 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1s' }}></div>
+              </div>
+              <h2 className="text-2xl font-bold tracking-widest animate-pulse">THE SOURCE</h2>
+              <p className="text-xs text-gray-500 mt-2 uppercase tracking-[0.3em]">Cargando Sistema</p>
+          </div>
+      );
+  }
 
+  const renderContent = () => {
     switch (currentView) {
       case 'LOGIN':
         return <LoginScreen 
@@ -364,6 +399,7 @@ const App: React.FC = () => {
           provider={selectedProvider} 
           onBack={() => navigateTo('HOME')}
           onSendRequest={() => { alert("Solicitud Enviada"); navigateTo('HOME'); }}
+          onReport={handleReport}
         /> : null;
 
       case 'CLIENT_PROFILE':
@@ -429,17 +465,10 @@ const App: React.FC = () => {
       {/* Sidebar Navigation - Visible on Desktop (lg+) */}
       {showNav && (
         <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-100 h-screen sticky top-0 shadow-sm z-50">
-           <div className="p-6">
-              <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-red-700 via-red-600 to-amber-600">
-                  THE SOURCE
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm text-red-600">
-                        <path d="M12 3C9 3 6 5 5 8C5 10 7 12 7 14C7 16 6 18 5 20C5 21.5 6.5 23 8.5 23H15.5C17.5 23 19 21.5 19 20C18 18 17 16 17 14C17 12 19 10 19 8C17.5 5 14.5 3 11 3" fill="#DC2626" stroke="#B91C1C" strokeWidth="1.5"/>
-                        <circle cx="20" cy="22" r="2.5" fill="white" stroke="#E5E7EB"/>
-                        <path d="M5 20C5 20 8 19 12 19C16 19 19 20 19 20" stroke="white" strokeWidth="3" strokeLinecap="round"/>
-                        <circle cx="11" cy="3" r="2.5" fill="white" stroke="#E5E7EB"/>
-                  </svg>
-              </h1>
-              <p className="text-[10px] font-bold text-red-600 tracking-[0.3em] uppercase">Holiday Edition</p>
+           <div className="p-6 relative">
+              <SantaHatIcon />
+              <h1 className="text-2xl font-black text-red-800 tracking-tighter">THE SOURCE</h1>
+              <p className="text-[10px] font-bold text-green-600 tracking-[0.3em] uppercase">Christmas Edition</p>
            </div>
            
            <nav className="flex-1 px-4 space-y-2">
@@ -462,6 +491,7 @@ const App: React.FC = () => {
 
            <div className="p-4 border-t border-gray-100">
               <button 
+                type="button"
                 onClick={() => {
                    if(confirm("¿Cerrar Sesión?")) setCurrentView('LOGIN');
                 }}
@@ -515,7 +545,7 @@ const NavBtn: React.FC<{ active: boolean, icon: React.ElementType, label: string
 
 // Component for Desktop Sidebar Item
 const NavSidebarItem: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
-  <button onClick={onClick} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ${active ? 'bg-red-700 text-white shadow-lg shadow-red-200' : 'text-gray-500 hover:bg-gray-50'}`}>
+  <button onClick={onClick} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ${active ? 'bg-red-800 text-white shadow-lg shadow-red-200' : 'text-gray-500 hover:bg-red-50'}`}>
       <Icon size={20} />
       <span className="font-bold text-sm">{label}</span>
   </button>

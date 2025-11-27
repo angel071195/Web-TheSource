@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Phone, ArrowRight, User, MapPin, Camera, Check, ChevronLeft, Upload, Briefcase, Mail, FileText, Crosshair, Loader2, Plus, Navigation, Map, Snowflake, Gift } from 'lucide-react';
+import { Phone, ArrowRight, User, MapPin, Camera, Check, ChevronLeft, Upload, Briefcase, Mail, FileText, Crosshair, Loader2, Plus, Navigation, Map } from 'lucide-react';
 import { Button, Input, TextArea, Modal, VerificationCard, LoadingButton, Snowfall } from '../components/UIComponents';
 import { CATEGORIES, PRICING_UNITS, BANKS_BOLIVIA, WALLETS_BOLIVIA, COLORS } from '../constants';
 import { UserData, Tariff, PaymentMethod } from '../types';
@@ -31,13 +31,12 @@ const FacebookIcon = () => (
   </svg>
 );
 
-const SantaHatIcon = () => (
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-md">
-        <path d="M12 3C9 3 6 5 5 8C5 10 7 12 7 14C7 16 6 18 5 20C5 21.5 6.5 23 8.5 23H15.5C17.5 23 19 21.5 19 20C18 18 17 16 17 14C17 12 19 10 19 8C17.5 5 14.5 3 11 3" fill="#DC2626" stroke="#B91C1C" strokeWidth="1.5"/>
-        <circle cx="20" cy="22" r="2.5" fill="white" stroke="#E5E7EB"/>
-        <path d="M5 20C5 20 8 19 12 19C16 19 19 20 19 20" stroke="white" strokeWidth="3" strokeLinecap="round"/>
-        <circle cx="11" cy="3" r="2.5" fill="white" stroke="#E5E7EB"/>
-    </svg>
+const SantaHat = () => (
+  <svg width="60" height="60" viewBox="0 0 100 100" className="absolute -top-10 -right-6 rotate-12 z-20 drop-shadow-md">
+    <path d="M10,80 Q50,10 90,80" fill="#dc2626" /> {/* Red Hat Body */}
+    <circle cx="90" cy="80" r="10" fill="white" /> {/* Pom Pom */}
+    <rect x="5" y="75" width="90" height="15" rx="8" fill="white" /> {/* Fur Trim */}
+  </svg>
 );
 
 const BOLIVIA_CITIES = [
@@ -122,43 +121,29 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
 
   if (step === 'LANDING') {
     return (
-      <div className="flex flex-col min-h-screen bg-gray-50 relative overflow-hidden items-center justify-center">
-        {/* Christmas Background - Red and Green Glows */}
-        <div className="absolute inset-0 bg-gradient-to-b from-red-50 to-gray-200"></div>
-        <div className="absolute top-[-50px] left-[-50px] w-96 h-96 bg-red-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob"></div>
-        <div className="absolute bottom-[-50px] right-[-50px] w-96 h-96 bg-emerald-600 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-[30%] left-[50%] w-64 h-64 bg-amber-400 rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob animation-delay-4000"></div>
-        
+      <div className="flex flex-col min-h-screen bg-gradient-to-b from-red-50 to-green-50 relative overflow-hidden items-center justify-center">
+        {/* Christmas Snowfall */}
         <Snowfall />
-
+        
+        {/* Christmas Background Lights (Blurred) */}
+        <div className="absolute top-[-50px] left-[-50px] w-96 h-96 bg-red-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-10 animate-blob"></div>
+        <div className="absolute bottom-[-50px] right-[-50px] w-96 h-96 bg-green-500 rounded-full mix-blend-multiply filter blur-[100px] opacity-10 animate-blob animation-delay-2000"></div>
+        
         <div className="w-full max-w-sm p-6 relative z-10">
           {/* 3D Card Container */}
-          <div className="bg-white/90 backdrop-blur-xl w-full rounded-[32px] shadow-[0_20px_50px_-12px_rgba(220,38,38,0.3)] border border-white/50 p-8 flex flex-col items-center relative">
+          <div className="bg-white/80 backdrop-blur-xl w-full rounded-[32px] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.3)] border border-white/50 p-8 flex flex-col items-center relative">
             
-            {/* Hanging Ornament Decoration */}
-            <div className="absolute top-0 left-8 w-1 h-12 bg-red-300"></div>
-            <div className="absolute top-12 left-6 w-5 h-5 rounded-full bg-red-500 shadow-md animate-bounce"></div>
-
-            {/* Logo with Christmas Hat */}
-            <div className="relative mb-8 group cursor-pointer mt-4">
-              <div className="absolute -top-7 -right-5 transform rotate-12 z-20 scale-110">
-                 <SantaHatIcon />
-              </div>
-              <div className="absolute inset-0 bg-red-600 rounded-3xl blur-md opacity-40 translate-y-2 group-hover:translate-y-3 transition-transform duration-500"></div>
-              <div className="w-24 h-24 bg-gradient-to-br from-red-600 to-red-800 rounded-3xl flex items-center justify-center relative z-10 shadow-inner border-t-4 border-white transform group-hover:-translate-y-1 transition-transform duration-500 overflow-hidden">
-                {/* Snow on top of box */}
-                <div className="absolute top-0 left-0 right-0 h-2 bg-white/90 rounded-b-xl"></div>
-                <span className="text-white text-5xl font-black drop-shadow-md relative z-10 pt-2">S</span>
+            {/* Logo - Christmas Edition */}
+            <div className="relative mb-8 group cursor-pointer">
+              <div className="absolute inset-0 bg-red-900 rounded-3xl blur-md opacity-30 translate-y-2 group-hover:translate-y-3 transition-transform duration-500"></div>
+              <div className="w-24 h-24 bg-red-700 rounded-3xl flex items-center justify-center relative z-10 shadow-inner border-t-4 border-white transform group-hover:-translate-y-1 transition-transform duration-500">
+                <SantaHat />
+                <span className="text-white text-5xl font-black" style={{ textShadow: '2px 4px 6px rgba(0,0,0,0.3)' }}>S</span>
               </div>
             </div>
 
-            <h1 className="text-3xl font-black tracking-tighter mb-1 drop-shadow-sm flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-red-700 via-red-600 to-amber-600">
-                THE SOURCE
-            </h1>
-            <p className="text-[10px] font-bold text-red-700 tracking-[0.3em] mb-10 uppercase bg-red-50 px-3 py-1 rounded-full border border-red-100 flex items-center gap-2">
-                <Gift size={12} />
-                Holiday Edition
-            </p>
+            <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-red-600 to-yellow-500 tracking-tighter mb-1 drop-shadow-sm">THE SOURCE</h1>
+            <p className="text-[10px] font-bold text-green-700 tracking-[0.3em] mb-10 uppercase bg-green-50 px-3 py-1 rounded-full border border-green-100">Christmas Edition</p>
 
             <div className="w-full space-y-4">
               <div className="relative group">
@@ -192,14 +177,14 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
               </button>
 
               <div className="pt-4">
-                <Button onClick={() => setStep('DETAILS')} fullWidth icon={ArrowRight} className="bg-gray-900 hover:bg-black shadow-xl shadow-gray-400/50" variant="christmas">
+                <Button onClick={() => setStep('DETAILS')} fullWidth icon={ArrowRight} className="bg-gray-900 hover:bg-black shadow-xl shadow-gray-400/50">
                   Iniciar Sesión
                 </Button>
               </div>
 
               <div className="mt-4 text-center">
                  <p className="text-gray-400 text-xs mb-1">¿Aún no eres parte?</p>
-                 <button onClick={() => setStep('DETAILS')} className="text-red-700 font-black text-sm hover:underline tracking-wide">
+                 <button onClick={() => setStep('DETAILS')} className="text-gray-900 font-black text-sm hover:underline tracking-wide">
                    CREAR CUENTA
                  </button>
               </div>
@@ -218,14 +203,10 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
   if (step === 'DETAILS') {
     return (
       <div className="flex flex-col min-h-screen bg-white p-6 pt-12 items-center justify-center animate-in fade-in slide-in-from-right duration-300">
-         <Snowfall />
-         <div className="w-full max-w-md relative z-10">
+         <div className="w-full max-w-md">
             <div className="mb-8 flex flex-col items-center text-center">
-                <div className="mb-4 text-red-500 animate-bounce">
-                    <Gift size={40} />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900">¡Felices Fiestas!</h2>
-                <p className="text-red-600 font-bold text-sm bg-red-50 px-3 py-1 rounded-full mb-2">Creando perfil de Cliente</p>
+                <h2 className="text-2xl font-bold text-gray-900">¡Bienvenido!</h2>
+                <p className="text-blue-600 font-bold text-sm bg-blue-50 px-3 py-1 rounded-full mb-2">Creando perfil de Cliente</p>
                 <p className="text-gray-500 text-sm">Verificaremos tu perfil en unos segundos.</p>
             </div>
             <div className="space-y-4">
@@ -239,14 +220,14 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
                     <MapPin size={20} />
                   </div>
                   <input 
-                    className="w-full bg-white border border-gray-200 text-gray-900 text-base rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none py-3.5 pl-12 pr-12 placeholder:text-gray-400 transition-all"
+                    className="w-full bg-white border border-gray-200 text-gray-900 text-base rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none py-3.5 pl-12 pr-12 placeholder:text-gray-400 transition-all"
                     placeholder="Escribe tu ciudad o barrio..."
                     value={tempData.location}
                     onChange={handleLocationChange}
                   />
                   <button 
                       onClick={handleGPSLocation}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-gray-100 hover:bg-red-100 text-gray-500 hover:text-red-600 rounded-xl transition-colors"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-gray-100 hover:bg-blue-100 text-gray-500 hover:text-blue-600 rounded-xl transition-colors"
                       title="Usar GPS"
                   >
                       {isLocating ? <Loader2 size={18} className="animate-spin" /> : <Crosshair size={18} />}
@@ -268,7 +249,7 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
                 )}
               </div>
 
-              <Button fullWidth onClick={() => setStep('PHOTO')} disabled={!tempData.name || !tempData.location} variant="christmas">Continuar</Button>
+              <Button fullWidth onClick={() => setStep('PHOTO')} disabled={!tempData.name || !tempData.location}>Continuar</Button>
             </div>
          </div>
       </div>
@@ -277,12 +258,8 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
 
   if (step === 'PHOTO') {
     return (
-      <div className="flex flex-col min-h-screen bg-gray-50 p-6 items-center justify-center animate-in fade-in zoom-in duration-500 relative overflow-hidden">
-          <Snowfall />
-          <div className="absolute top-0 right-0 w-64 h-64 bg-red-100 rounded-full blur-3xl opacity-50"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-green-100 rounded-full blur-3xl opacity-50"></div>
-
-          <div className="w-full max-w-sm flex flex-col items-center bg-white p-8 rounded-[40px] shadow-2xl shadow-red-100 border border-white relative z-10">
+      <div className="flex flex-col min-h-screen bg-gray-50 p-6 items-center justify-center animate-in fade-in zoom-in duration-500">
+          <div className="w-full max-w-sm flex flex-col items-center bg-white p-8 rounded-[40px] shadow-2xl shadow-gray-200 border border-white">
             <h2 className="text-2xl font-black text-gray-900 mb-2">Tu Foto de Perfil</h2>
             <p className="text-gray-400 mb-8 text-center text-sm font-medium">Personaliza tu experiencia. Es opcional.</p>
             
@@ -300,21 +277,21 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
               className={`w-40 h-40 rounded-full flex flex-col items-center justify-center mb-10 transition-all duration-500 relative group shadow-2xl ${
                 tempData.image && !tempData.image.includes('dicebear')
                   ? 'bg-white' 
-                  : 'bg-gradient-to-br from-red-50 to-red-100 hover:from-white hover:to-white'
+                  : 'bg-gradient-to-br from-gray-50 to-gray-100 hover:from-white hover:to-white'
               }`}
             >
-                <div className="absolute -inset-1 bg-gradient-to-r from-red-400 to-green-400 rounded-full opacity-20 group-hover:opacity-40 blur transition duration-500"></div>
+                <div className="absolute -inset-1 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full opacity-20 group-hover:opacity-40 blur transition duration-500"></div>
                 
                 <div className="relative w-full h-full rounded-full overflow-hidden border-4 border-white flex items-center justify-center bg-white">
                   {uploadingPhoto ? (
                       <div className="flex flex-col items-center gap-2">
-                        <Loader2 size={32} className="animate-spin text-red-600" />
-                        <span className="text-[10px] font-bold text-red-600">SUBIENDO</span>
+                        <Loader2 size={32} className="animate-spin text-blue-600" />
+                        <span className="text-[10px] font-bold text-blue-600">SUBIENDO</span>
                       </div>
                   ) : tempData.image && !tempData.image.includes('dicebear') ? (
                       <img src={tempData.image} alt="Uploaded" className="w-full h-full object-cover" />
                   ) : (
-                      <div className="w-full h-full bg-gradient-to-br from-red-500 to-red-700 flex items-center justify-center text-white font-black text-6xl shadow-inner">
+                      <div className="w-full h-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-6xl shadow-inner">
                          {tempData.name.charAt(0).toUpperCase()}
                       </div>
                   )}
@@ -326,13 +303,13 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
                   )}
                 </div>
 
-                <div className="absolute bottom-2 right-2 bg-green-600 text-white p-2 rounded-full shadow-lg border-2 border-white transform group-hover:scale-110 transition-transform">
+                <div className="absolute bottom-2 right-2 bg-black text-white p-2 rounded-full shadow-lg border-2 border-white transform group-hover:scale-110 transition-transform">
                    <Plus size={16} />
                 </div>
             </button>
 
             <div className="w-full space-y-3">
-              <Button fullWidth onClick={() => onLogin('CLIENT', tempData)} disabled={uploadingPhoto} className="h-14 text-lg bg-gray-900 hover:bg-black shadow-xl shadow-red-100" variant="christmas">
+              <Button fullWidth onClick={() => onLogin('CLIENT', tempData)} disabled={uploadingPhoto} className="h-14 text-lg bg-gray-900 hover:bg-black shadow-xl shadow-gray-300">
                  {tempData.image ? 'Finalizar Registro' : 'Continuar sin foto'}
               </Button>
               
@@ -525,30 +502,35 @@ export const ProviderOnboarding: React.FC<{
 
   const handleSmartSubmit = async () => {
     setSubmitStage('ENCRYPTING');
+    
+    // --- ANTI-DUPLICATE VALIDATION ---
+    try {
+      if (formData.phone) {
+        const phoneQuery = query(collection(db, "solicitudes_servicio"), where("phone", "==", formData.phone));
+        const phoneSnapshot = await getDocs(phoneQuery);
+        
+        const isDuplicate = phoneSnapshot.docs.some(doc => {
+           const data = doc.data();
+           // Check if duplicate belongs to DIFFERENT user (allow self-update)
+           return data.uid !== currentUser?.uid;
+        });
+
+        if (isDuplicate) {
+           alert("⛔ Este número de celular ya está registrado por otro usuario.");
+           setSubmitStage('IDLE');
+           return; // STOP SUBMISSION
+        }
+      }
+    } catch (e) {
+      console.error("Validation check failed", e);
+      // Continue cautiously or stop? We continue but log it.
+    }
+    // ---------------------------------
+
     await new Promise(r => setTimeout(r, 1000));
     setSubmitStage('UPLOADING');
     
     try {
-        // Anti-Duplicate Phone Check
-        if (formData.phone) {
-            const q = query(collection(db, "solicitudes_servicio"), where("phone", "==", formData.phone));
-            const querySnapshot = await getDocs(q);
-            
-            // Check if found doc is NOT current user (duplicate)
-            let isDuplicate = false;
-            querySnapshot.forEach((doc) => {
-                if (doc.data().uid !== currentUser?.uid) {
-                    isDuplicate = true;
-                }
-            });
-
-            if (isDuplicate) {
-                alert("⛔ Este número de celular ya está registrado por otro usuario.");
-                setSubmitStage('IDLE');
-                return; // STOP EXECUTION
-            }
-        }
-
         const finalData = { 
             ...formData, 
             uid: currentUser?.uid,
@@ -557,8 +539,6 @@ export const ProviderOnboarding: React.FC<{
             latitude: locationCoords?.latitude,
             longitude: locationCoords?.longitude
         };
-
-        console.log("Guardando datos...", finalData);
 
         if (docId) {
             await updateDoc(doc(db, "solicitudes_servicio", docId), finalData);
@@ -576,7 +556,7 @@ export const ProviderOnboarding: React.FC<{
         
     } catch (error) {
         console.error("Error saving profile:", error);
-        alert("Error al guardar perfil. Revisa la consola.");
+        alert("Error al guardar perfil");
         setSubmitStage('IDLE');
     }
   };
@@ -640,8 +620,8 @@ export const ProviderOnboarding: React.FC<{
                       const isActive = formData.professions?.includes(cat.label);
                       return (
                         <button 
-                          type="button"
                           key={cat.id} 
+                          type="button"
                           onClick={() => toggleProfession(cat.label)}
                           className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
                             isActive ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-200 text-gray-600'
@@ -860,7 +840,7 @@ export const ProviderOnboarding: React.FC<{
                 disabled={!formData.acceptedTerms} 
              />
           ) : (
-            <Button fullWidth onClick={() => setStep(step + 1)} disabled={step === 1 && !locationCoords} variant="christmas">
+            <Button fullWidth onClick={() => setStep(step + 1)} disabled={step === 1 && !locationCoords}>
               {step === 1 && !locationCoords ? 'Requiere Ubicación' : 'Continuar'}
             </Button>
           )}
