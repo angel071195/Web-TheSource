@@ -1,4 +1,4 @@
-// src/App.tsx
+
 import React, { useState, useEffect } from 'react';
 import { Home, Search, PlusSquare, User, Inbox, Grid, Monitor, Wallet, LogOut, Menu, Snowflake } from 'lucide-react';
 import { ViewState, UserType, UserData, Provider, Lead, AdminData, JobPost, UserDocument } from './types';
@@ -18,30 +18,8 @@ const EMAIL_SERVICE_ID = "service_ytz8gpd";
 const EMAIL_TEMPLATE_ID = "template_gkqblyu";
 const EMAIL_PUBLIC_KEY = "9DpJRC-7vdu7TOeXl";
 
-// --- Persist view constants
-const VIEW_PARAM = 'view';
-const VIEW_STORAGE_KEY = 'the_source:viewState';
-
-function readViewFromUrlOrStorage(defaultView: ViewState): ViewState {
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const v = params.get(VIEW_PARAM);
-    if (v && typeof v === 'string') {
-      return v as ViewState;
-    }
-  } catch (e) { /* ignore */ }
-
-  try {
-    const stored = sessionStorage.getItem(VIEW_STORAGE_KEY);
-    if (stored) return stored as ViewState;
-  } catch (e) { /* ignore */ }
-
-  return defaultView;
-}
-
 const App: React.FC = () => {
-  // Inicializa leyendo URL o sessionStorage (si existe)
-  const [currentView, setCurrentView] = useState<ViewState>(() => readViewFromUrlOrStorage('LOGIN'));
+  const [currentView, setCurrentView] = useState<ViewState>('LOGIN');
   const [userType, setUserType] = useState<UserType>('CLIENT');
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null); // Firebase User
@@ -110,35 +88,6 @@ const App: React.FC = () => {
   const [showBonusModal, setShowBonusModal] = useState(false);
   const [bonusAmount, setBonusAmount] = useState(0);
 
-  // Helper: set view + sync to sessionStorage + URL
-  const setViewAndSync = (next: ViewState, opts?: { replace?: boolean; extra?: Record<string,string> }) => {
-    setCurrentView(next);
-    try { sessionStorage.setItem(VIEW_STORAGE_KEY, next); } catch(e){ /* ignore */ }
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.set(VIEW_PARAM, next);
-      if (opts?.extra) {
-        Object.entries(opts.extra).forEach(([k, v]) => url.searchParams.set(k, v));
-      }
-      if (opts?.replace) {
-        window.history.replaceState({}, '', url.toString());
-      } else {
-        window.history.pushState({}, '', url.toString());
-      }
-    } catch (e) { /* ignore */ }
-  };
-
-  // Navigation helper used by UI (keeps same behavior but syncs)
-  const navigateTo = (view: ViewState | 'HIRE_MODE') => {
-    if (view === 'HIRE_MODE') {
-        setViewAndSync('HOME');
-        return;
-    }
-    setSelectedProvider(null);
-    setSelectedLead(null);
-    setViewAndSync(view);
-  };
-
   // Monitor Auth State
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
@@ -156,23 +105,13 @@ const App: React.FC = () => {
 
         // Auto-redirect if on login screen
         if (currentView === 'LOGIN') {
-            setViewAndSync('HOME');
+            setCurrentView('HOME');
         }
       }
       setAuthLoading(false);
     });
     return () => unsubscribe();
   }, [currentView]);
-
-  // Listen to browser history change (back/forward)
-  useEffect(() => {
-    const onPop = () => {
-      const newView = readViewFromUrlOrStorage('LOGIN');
-      setCurrentView(newView);
-    };
-    window.addEventListener('popstate', onPop);
-    return () => window.removeEventListener('popstate', onPop);
-  }, []);
 
   // Scroll to top when view changes
   useEffect(() => {
@@ -189,7 +128,7 @@ const App: React.FC = () => {
         image: user.photoURL || prev.image
       }));
       
-      setViewAndSync(userType === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
+      setCurrentView(userType === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
   };
 
   const handleSocialLogin = async (providerName: 'google' | 'facebook') => {
@@ -230,6 +169,16 @@ const App: React.FC = () => {
     }
   };
 
+  const navigateTo = (view: ViewState | 'HIRE_MODE') => {
+    if (view === 'HIRE_MODE') {
+        setCurrentView('HOME');
+        return;
+    }
+    setSelectedProvider(null);
+    setSelectedLead(null);
+    setCurrentView(view);
+  };
+
   const sendWelcomeEmail = (data: Partial<UserData>) => {
       if (!data.email || !data.name) return;
 
@@ -253,7 +202,7 @@ const App: React.FC = () => {
     const newPoints = (userData.loyaltyPoints || 0) + points;
     setUserData({ ...userData, loyaltyPoints: newPoints });
     alert(`¡Excelente! Has ganado +${points} puntos.`);
-    setViewAndSync('HOME');
+    setCurrentView('HOME');
   };
 
   const handleUnlockLead = (leadId: string) => {
@@ -264,7 +213,7 @@ const App: React.FC = () => {
           const lead = leads.find(l => l.id === leadId);
           if (lead) {
              setSelectedLead(lead);
-             setViewAndSync('LEAD_DETAIL');
+             setCurrentView('LEAD_DETAIL');
           }
           return;
       }
@@ -297,13 +246,13 @@ const App: React.FC = () => {
       const lead = leads.find(l => l.id === leadId);
       if (lead) {
          setSelectedLead(lead);
-         setViewAndSync('LEAD_DETAIL');
+         setCurrentView('LEAD_DETAIL');
       }
   };
 
   const handleViewLead = (lead: Lead) => {
       setSelectedLead(lead);
-      setViewAndSync('LEAD_DETAIL');
+      setCurrentView('LEAD_DETAIL');
   };
 
   // ADMIN LOGIC: Approve Recharge
@@ -396,15 +345,15 @@ const App: React.FC = () => {
         return <HomeView 
            userData={userData} 
            providers={providers}
-           onSelectProvider={(p) => { setSelectedProvider(p); setViewAndSync('PROFILE_DETAIL'); }}
+           onSelectProvider={(p) => { setSelectedProvider(p); setCurrentView('PROFILE_DETAIL'); }}
            onNavigate={navigateTo}
-           onToggleSearch={() => setViewAndSync('SEARCH')}
+           onToggleSearch={() => setCurrentView('SEARCH')}
         />;
         
       case 'SEARCH':
         return <SearchView 
            providers={providers}
-           onSelectProvider={(p) => { setSelectedProvider(p); setViewAndSync('PROFILE_DETAIL'); }}
+           onSelectProvider={(p) => { setSelectedProvider(p); setCurrentView('PROFILE_DETAIL'); }}
         />;
 
       case 'REQUEST_SERVICE':
@@ -514,7 +463,7 @@ const App: React.FC = () => {
            <div className="p-4 border-t border-gray-100">
               <button 
                 onClick={() => {
-                   if(confirm("¿Cerrar Sesión?")) setViewAndSync('LOGIN');
+                   if(confirm("¿Cerrar Sesión?")) setCurrentView('LOGIN');
                 }}
                 className="flex items-center gap-3 text-gray-500 hover:text-red-500 hover:bg-red-50 p-3 rounded-xl w-full transition-colors font-medium text-sm"
               >
@@ -557,4 +506,19 @@ const App: React.FC = () => {
 };
 
 // Component for Mobile Bottom Nav Button
-const NavBtn
+const NavBtn: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
+  <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors min-w-[60px] py-1.5 px-2 rounded-xl ${active ? 'text-red-600 bg-red-50' : 'hover:text-gray-600 hover:bg-gray-50'}`}>
+    <Icon size={24} strokeWidth={active ? 2.5 : 2} />
+    <span className="text-[10px] font-medium">{label}</span>
+  </button>
+);
+
+// Component for Desktop Sidebar Item
+const NavSidebarItem: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
+  <button onClick={onClick} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ${active ? 'bg-red-700 text-white shadow-lg shadow-red-200' : 'text-gray-500 hover:bg-gray-50'}`}>
+      <Icon size={20} />
+      <span className="font-bold text-sm">{label}</span>
+  </button>
+);
+
+export default App;
