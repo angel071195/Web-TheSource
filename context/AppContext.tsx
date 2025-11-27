@@ -29,26 +29,51 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+// Helper to load from storage
+const loadFromStorage = (key: string, defaultValue: any) => {
+  try {
+    const stored = localStorage.getItem(key);
+    return stored ? JSON.parse(stored) : defaultValue;
+  } catch (e) {
+    console.error(`Error loading ${key}`, e);
+    return defaultValue;
+  }
+};
+
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  // PERSISTENCE: Load initial state from LocalStorage if available
+  const [user, setUser] = useState<User | null>(() => loadFromStorage('streamhub_user', null));
   
-  // Single Source of Truth for Balances (Simulating a Database)
-  const [userBalances, setUserBalances] = useState<Record<string, number>>({
-    [MOCK_USER.email]: MOCK_USER.balance,
-    [MOCK_ADMIN.email]: MOCK_ADMIN.balance // This represents Admin Sales Income
-  });
+  const [userBalances, setUserBalances] = useState<Record<string, number>>(() => 
+    loadFromStorage('streamhub_balances', {
+      [MOCK_USER.email]: MOCK_USER.balance,
+      [MOCK_ADMIN.email]: MOCK_ADMIN.balance
+    })
+  );
 
-  // Source of Truth for Loyalty Points
-  const [userPoints, setUserPoints] = useState<Record<string, number>>({
-    [MOCK_USER.email]: MOCK_USER.loyaltyPoints,
-    [MOCK_ADMIN.email]: MOCK_ADMIN.loyaltyPoints
-  });
+  const [userPoints, setUserPoints] = useState<Record<string, number>>(() => 
+    loadFromStorage('streamhub_points', {
+      [MOCK_USER.email]: MOCK_USER.loyaltyPoints,
+      [MOCK_ADMIN.email]: MOCK_ADMIN.loyaltyPoints
+    })
+  );
 
-  const [services, setServices] = useState<Service[]>(MOCK_SERVICES);
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(INITIAL_SUBS); 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [rechargeRequests, setRechargeRequests] = useState<RechargeRequest[]>([]);
-  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
+  const [services, setServices] = useState<Service[]>(() => loadFromStorage('streamhub_services', MOCK_SERVICES));
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>(() => loadFromStorage('streamhub_subs', INITIAL_SUBS));
+  const [transactions, setTransactions] = useState<Transaction[]>(() => loadFromStorage('streamhub_txs', []));
+  const [rechargeRequests, setRechargeRequests] = useState<RechargeRequest[]>(() => loadFromStorage('streamhub_reqs', []));
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(() => loadFromStorage('streamhub_methods', []));
+
+  // PERSISTENCE: Save to LocalStorage whenever state changes
+  useEffect(() => { localStorage.setItem('streamhub_user', JSON.stringify(user)); }, [user]);
+  useEffect(() => { localStorage.setItem('streamhub_balances', JSON.stringify(userBalances)); }, [userBalances]);
+  useEffect(() => { localStorage.setItem('streamhub_points', JSON.stringify(userPoints)); }, [userPoints]);
+  useEffect(() => { localStorage.setItem('streamhub_services', JSON.stringify(services)); }, [services]);
+  useEffect(() => { localStorage.setItem('streamhub_subs', JSON.stringify(subscriptions)); }, [subscriptions]);
+  useEffect(() => { localStorage.setItem('streamhub_txs', JSON.stringify(transactions)); }, [transactions]);
+  useEffect(() => { localStorage.setItem('streamhub_reqs', JSON.stringify(rechargeRequests)); }, [rechargeRequests]);
+  useEffect(() => { localStorage.setItem('streamhub_methods', JSON.stringify(paymentMethods)); }, [paymentMethods]);
+
 
   // Auto-sync user balance if it changes in the background (e.g. Admin approved while user is logged in)
   useEffect(() => {
@@ -105,6 +130,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('streamhub_user');
   };
 
   const addBalance = (amount: number) => {
