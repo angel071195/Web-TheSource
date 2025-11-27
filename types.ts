@@ -1,124 +1,86 @@
 
-export type ViewState = 
-  | 'LOGIN' 
-  | 'ONBOARDING_CLIENT' 
-  | 'ONBOARDING_PROVIDER' 
-  | 'HOME' 
-  | 'SEARCH' 
-  | 'REQUEST_SERVICE' 
-  | 'CLIENT_PROFILE' 
-  | 'PROFILE_DETAIL' 
-  | 'WORKER_DASHBOARD' 
-  | 'MY_SERVICES' 
-  | 'WALLET' 
-  | 'OPPORTUNITIES' 
-  | 'ADMIN' 
-  | 'JOB_CLOSING' 
-  | 'HELP' 
-  | 'TERMS'
-  | 'HIRE_MODE'
-  | 'LEAD_DETAIL';
+export enum UserRole {
+  ADMIN = 'ADMIN',
+  USER = 'USER',
+  RESELLER = 'RESELLER'
+}
 
-export type UserType = 'CLIENT' | 'PROVIDER';
+export enum ServiceCategory {
+  MOVIES = 'Películas',
+  MUSIC = 'Música',
+  ANIME = 'Anime',
+  SPORTS = 'Deportes',
+  SOFTWARE = 'Software'
+}
 
-export interface Tariff {
-  service: string;
-  price: number | string;
-  unit: string;
+export interface Service {
+  id: string;
+  name: string;
+  description: string;
+  category: ServiceCategory;
+  price: number; // Monthly price in Bolivianos
+  durationDays: number;
+  logoUrl: string;
+  stock: number;
+  isHot?: boolean; // Oferta flash
+}
+
+export interface Subscription {
+  id: string;
+  serviceId: string;
+  serviceName: string;
+  logoUrl: string;
+  buyerEmail: string; // ID/Email of the user who bought this subscription
+  email: string; // Provided by Admin (Account credentials)
+  password?: string; // Provided by Admin
+  profileName?: string; // Provided by Admin
+  pin?: string;
+  adminMessage?: string; // Message from Admin
+  purchaseDate: string; // ISO string
+  expiryDate: string; // ISO string
+  status: 'ACTIVE' | 'EXPIRED' | 'REPORTED' | 'PENDING';
+}
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  balance: number;
+  loyaltyPoints: number; // Added for loyalty system
+}
+
+export interface Transaction {
+  id: string;
+  type: 'DEPOSIT' | 'PURCHASE' | 'SALE' | 'REDEEM'; // Added REDEEM type
+  amount: number;
+  date: string;
+  description: string;
+  userEmail?: string; // Added for financial reporting
+}
+
+export interface RechargeRequest {
+  id: string;
+  userId: string;
+  userEmail: string;
+  amount: number;
+  receiptImage: string; // Base64 string
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  date: string;
+  approvalDate?: string; // ISO string, added for notification logic
 }
 
 export interface PaymentMethod {
   id: string;
-  type: string;
-  title: string;
-  details: string;
-  qrImage?: string;
+  name: string; // e.g., "Banco Union", "QR Simple"
+  type: 'QR' | 'BANK_INFO';
+  imageData?: string; // Base64 for QR
+  details?: string; // Text for Account Number, etc.
 }
 
-export interface UserDocument {
+export interface ChatMessage {
   id: string;
-  name: string;
-  url: string;
-  date: string;
-  type: 'CV' | 'CERTIFICATE' | 'OTHER';
-}
-
-export interface Provider {
-  id: string;
-  name: string;
-  professions: string[];
-  rating: number;
-  reviews: number;
-  location: string;
-  image: string;
-  price: number;
-  unit: string;
-  walletBalance: number;
-  bio: string;
-  isVerified: boolean;
-  issuesInvoice: boolean;
-  cvUrl?: string;
-  tariffs: Tariff[];
-  paymentMethods: PaymentMethod[];
-}
-
-export interface UserData {
-  name: string;
-  email?: string;
-  location: string;
-  loyaltyPoints: number;
-  walletBalance: number;
-  type?: UserType;
-  unlockedLeads?: string[];
-  age?: string;
-  phone?: string;
-  image?: string;
-  bio?: string;
-  professions?: string[];
-  customProfession?: string;
-  tariffs?: Tariff[];
-  idFront?: string | null;
-  idBack?: string | null;
-  cv?: string | null;
-  documents?: UserDocument[]; // Added documents array
-  paymentMethods?: PaymentMethod[];
-  acceptedTerms?: boolean;
-  issuesInvoice?: boolean;
-}
-
-export interface Lead {
-  id: string;
-  clientName: string;
-  avatar?: string;
-  location?: string;
-  message: string;
-  status: 'LOCKED' | 'UNLOCKED';
-  date: string;
-  phone: string;
-  category: string;
-  budget?: string;
-}
-
-export interface JobPost {
-  id: string;
-  title: string;
-  description: string;
-  clientName: string;
-  location: string;
-  date: string;
-  category: string;
-  budget: string;
-}
-
-export interface AdminData {
-  pendingRecharges: {
-      id: string; 
-      workerName: string; 
-      amount: number; 
-      date: string; 
-      status: string; 
-      proofUrl: string;
-  }[];
-  jobAudits: {id: string, service: string, amount: number, warning: boolean, client: string}[];
-  revenue: number;
+  sender: 'user' | 'ai';
+  text: string;
+  timestamp: number;
 }
