@@ -1,62 +1,24 @@
 
 import React from 'react';
-import { LucideIcon, ShieldCheck, CheckCircle2, Loader2, Snowflake } from 'lucide-react';
+import { LucideIcon, ShieldCheck, CheckCircle2, Loader2 } from 'lucide-react';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'black' | 'christmas';
+  variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'black';
   icon?: LucideIcon;
   fullWidth?: boolean;
 }
 
-export const Snowfall: React.FC = () => {
-  // Generate random snowflakes
-  const flakes = Array.from({ length: 20 }).map((_, i) => ({
-    left: `${Math.random() * 100}%`,
-    animationDuration: `${Math.random() * 3 + 5}s`,
-    animationDelay: `${Math.random() * 5}s`,
-    opacity: Math.random() * 0.5 + 0.3,
-    size: Math.random() * 10 + 5,
-  }));
-
-  return (
-    <div className="absolute inset-0 pointer-events-none overflow-hidden z-0">
-      {flakes.map((flake, i) => (
-        <div
-          key={i}
-          className="absolute top-[-20px] bg-white rounded-full blur-[1px] animate-fall"
-          style={{
-            left: flake.left,
-            width: `${flake.size}px`,
-            height: `${flake.size}px`,
-            opacity: flake.opacity,
-            animation: `fall ${flake.animationDuration} linear infinite`,
-            animationDelay: flake.animationDelay,
-          }}
-        />
-      ))}
-      <style>{`
-        @keyframes fall {
-          0% { transform: translateY(-20px) translateX(0); }
-          50% { transform: translateY(50vh) translateX(20px); }
-          100% { transform: translateY(105vh) translateX(-20px); }
-        }
-      `}</style>
-    </div>
-  );
-};
-
 export const Button: React.FC<ButtonProps> = ({ 
   children, variant = 'primary', icon: Icon, fullWidth = false, className = '', ...props 
 }) => {
-  const baseStyles = "flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden";
+  const baseStyles = "flex items-center justify-center gap-2 px-4 py-3.5 rounded-2xl font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed";
   
   const variants = {
     primary: "bg-gray-900 text-white hover:bg-black shadow-lg shadow-gray-200",
     secondary: "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-100",
     outline: "border border-gray-200 bg-white text-gray-900 hover:bg-gray-50",
     ghost: "bg-transparent text-gray-500 hover:text-gray-900 hover:bg-gray-100",
-    black: "bg-black text-white hover:bg-gray-900 shadow-lg shadow-gray-400",
-    christmas: "bg-gradient-to-r from-red-700 to-red-600 text-white hover:to-red-800 shadow-lg shadow-red-200 border border-red-500"
+    black: "bg-black text-white hover:bg-gray-900 shadow-lg shadow-gray-400"
   };
 
   return (
@@ -64,7 +26,6 @@ export const Button: React.FC<ButtonProps> = ({
       className={`${baseStyles} ${variants[variant]} ${fullWidth ? 'w-full' : ''} ${className}`}
       {...props}
     >
-      {variant === 'christmas' && <div className="absolute top-0 right-0 w-8 h-8 bg-white/10 rounded-bl-full"></div>}
       {Icon && <Icon size={20} />}
       {children}
     </button>
@@ -80,7 +41,7 @@ export const LoadingButton: React.FC<{
   
   if (stage === 'IDLE') {
     return (
-      <Button fullWidth onClick={onClick} disabled={disabled} className={className} variant="christmas">
+      <Button fullWidth onClick={onClick} disabled={disabled} className={className}>
         Finalizar Registro
       </Button>
     );
@@ -126,14 +87,9 @@ export const VerificationCard: React.FC<{
   return (
     <div className="relative w-full aspect-[1.586/1] max-w-[340px] mx-auto bg-gradient-to-br from-gray-900 via-gray-800 to-black rounded-3xl p-6 shadow-2xl border border-yellow-500/30 overflow-hidden group hover:scale-105 transition-transform duration-500">
       
-      {/* Christmas Deco for Card */}
-      <div className="absolute top-[-20px] right-[-20px] opacity-20">
-         <Snowflake size={100} className="text-white animate-spin-slow" style={{ animationDuration: '20s' }} />
-      </div>
-
       {/* Decorative Background Elements */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-500/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
-      <div className="absolute bottom-0 left-0 w-24 h-24 bg-red-500/10 rounded-full blur-2xl -ml-5 -mb-5"></div>
+      <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/10 rounded-full blur-2xl -ml-5 -mb-5"></div>
       
       {/* Grid Pattern Overlay */}
       <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(#fbbf24 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
@@ -198,7 +154,7 @@ export const Input: React.FC<InputProps> = ({ label, icon: Icon, className = '',
           </div>
         )}
         <input 
-          className={`w-full bg-white border border-gray-200 text-gray-900 text-base rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none py-3.5 px-4 ${Icon ? 'pl-12' : ''} placeholder:text-gray-400 transition-all`}
+          className={`w-full bg-white border border-gray-200 text-gray-900 text-base rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none py-3.5 px-4 ${Icon ? 'pl-12' : ''} placeholder:text-gray-400 transition-all`}
           {...props}
         />
       </div>
@@ -210,7 +166,7 @@ export const TextArea: React.FC<React.TextareaHTMLAttributes<HTMLTextAreaElement
   <div className={`mb-4 w-full ${className}`}>
     {label && <label className="block text-sm font-semibold text-gray-900 mb-2">{label}</label>}
     <textarea 
-      className="w-full bg-white border border-gray-200 text-gray-900 text-base rounded-2xl focus:ring-2 focus:ring-red-500 focus:border-transparent outline-none py-3.5 px-4 placeholder:text-gray-400 min-h-[100px] resize-none transition-all"
+      className="w-full bg-white border border-gray-200 text-gray-900 text-base rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none py-3.5 px-4 placeholder:text-gray-400 min-h-[100px] resize-none transition-all"
       {...props}
     />
   </div>
@@ -233,25 +189,21 @@ export const Modal: React.FC<ModalProps> = ({ isOpen, onClose, children, title, 
       <div 
         className={`relative bg-white w-full max-w-md animate-in fade-in zoom-in duration-200 ${
           position === 'bottom' ? 'mt-auto rounded-t-3xl rounded-b-none' : 'rounded-3xl'
-        } p-6 shadow-2xl overflow-hidden border-t-4 border-red-500`}
+        } p-6 shadow-2xl overflow-hidden`}
       >
-        <Snowfall />
-        {title && <h3 className="text-xl font-bold text-gray-900 mb-4 relative z-10">{title}</h3>}
-        <div className="relative z-10">
-            {children}
-        </div>
+        {title && <h3 className="text-xl font-bold text-gray-900 mb-4">{title}</h3>}
+        {children}
       </div>
     </div>
   );
 };
 
-export const Badge: React.FC<{ children: React.ReactNode, color?: 'blue' | 'green' | 'red' | 'gray' | 'gold' }> = ({ children, color = 'gray' }) => {
+export const Badge: React.FC<{ children: React.ReactNode, color?: 'blue' | 'green' | 'red' | 'gray' }> = ({ children, color = 'gray' }) => {
   const colors = {
     blue: 'bg-blue-50 text-blue-700',
     green: 'bg-emerald-50 text-emerald-700',
     red: 'bg-red-50 text-red-700',
-    gray: 'bg-gray-100 text-gray-700',
-    gold: 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+    gray: 'bg-gray-100 text-gray-700'
   };
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-bold ${colors[color]}`}>
