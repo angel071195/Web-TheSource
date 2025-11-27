@@ -1,8 +1,10 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AdminData } from '../types';
 import { Button, Badge, Input, VerificationCard } from '../components/UIComponents';
 import { ArrowLeft, Check, X, AlertTriangle, Users, CreditCard, PieChart, DollarSign, BarChart3, UserCheck, Search, LayoutDashboard, Settings } from 'lucide-react';
+import { db } from '../firebaseConfig';
+import { collection, getDocs } from "firebase/firestore";
 
 interface AdminDashboardProps {
     adminData: AdminData;
@@ -16,15 +18,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminData, onBac
     const [manualWorker, setManualWorker] = useState('');
     const [manualAmount, setManualAmount] = useState('');
 
-    const mockClients = [
-        { id: 'c1', name: 'Maria Rodriguez', phone: '70012345' },
-        { id: 'c2', name: 'Juan Perez', phone: '70099999' },
-    ];
-    const mockWorkers = [
-        { id: 'w1', name: 'Carlos Mamani', phone: '60012345', profession: 'Electricista', image: 'https://randomuser.me/api/portraits/men/32.jpg' },
-        { id: 'w2', name: 'Ana Flores', phone: '60054321', profession: 'Limpieza', image: 'https://randomuser.me/api/portraits/women/44.jpg' },
-        { id: 'w3', name: 'Roberto Gomez', phone: '60088888', profession: 'Plomero', image: 'https://randomuser.me/api/portraits/men/11.jpg' },
-    ];
+    const [clients, setClients] = useState<any[]>([]);
+    const [workers, setWorkers] = useState<any[]>([]);
+
+    // FETCH DATA FROM FIRESTORE
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                // Fetch Clients (Users collection)
+                const usersSnap = await getDocs(collection(db, "users"));
+                const usersData = usersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setClients(usersData);
+
+                // Fetch Workers (solicitudes_servicio collection)
+                const workersSnap = await getDocs(collection(db, "solicitudes_servicio"));
+                const workersData = workersSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                setWorkers(workersData);
+            } catch (error) {
+                console.error("Error fetching admin data:", error);
+            }
+        };
+        fetchData();
+    }, []);
 
     const tabs = [
         { id: 'finances', label: 'Finanzas', icon: DollarSign, desc: 'Ingresos y Recargas' },
@@ -208,15 +223,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminData, onBac
                                      <div className="p-2 bg-blue-100 text-blue-600 rounded-lg"><UserCheck size={24} /></div>
                                      <div>
                                          <h3 className="font-bold text-gray-900 text-xl">Trabajadores Verificados</h3>
-                                         <p className="text-gray-500 text-sm">Vista previa de credenciales digitales</p>
+                                         <p className="text-gray-500 text-sm">Vista previa de credenciales digitales ({workers.length})</p>
                                      </div>
                                  </div>
                                  
                                  {/* Responsive Grid for Cards */}
                                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                                     {mockWorkers.map(w => (
+                                     {workers.map(w => (
                                          <div key={w.id} className="transform hover:-translate-y-1 transition-transform duration-300">
-                                             <VerificationCard name={w.name} profession={w.profession} image={w.image} memberId={`MBR-${w.id.toUpperCase()}`} />
+                                             <VerificationCard 
+                                                name={w.name || 'Sin Nombre'} 
+                                                profession={w.professions?.[0] || w.customProfession || 'Trabajador'} 
+                                                image={w.image || w.idFront} 
+                                                memberId={`MBR-${w.id.substring(0,6).toUpperCase()}`} 
+                                             />
                                              <div className="mt-3 flex justify-center gap-2">
                                                  <button className="px-3 py-1 bg-white border border-gray-200 rounded-lg text-xs font-bold hover:bg-gray-50">Ver Detalles</button>
                                                  <button className="px-3 py-1 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100">Suspender</button>
@@ -231,22 +251,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ adminData, onBac
                                      <h3 className="font-bold text-gray-900 text-lg flex items-center gap-2">
                                          <Users size={20} className="text-gray-400"/> Lista de Clientes
                                      </h3>
-                                     <Badge color="gray">{mockClients.length} Registrados</Badge>
+                                     <Badge color="gray">{clients.length} Registrados</Badge>
                                  </div>
                                  <div className="divide-y divide-gray-50">
-                                     {mockClients.map(c => (
+                                     {clients.map(c => (
                                          <div key={c.id} className="p-4 flex justify-between items-center hover:bg-gray-50 transition-colors">
                                              <div className="flex items-center gap-4">
-                                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center font-bold text-blue-600">
-                                                     {c.name.charAt(0)}
+                                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 flex items-center justify-center font-bold text-blue-600 overflow-hidden">
+                                                     {c.image ? <img src={c.image} className="w-full h-full object-cover"/> : c.name?.charAt(0)}
                                                  </div>
                                                  <div>
-                                                     <p className="font-bold text-gray-900 text-sm">{c.name}</p>
+                                                     <p className="font-bold text-gray-900 text-sm">{c.name || 'Usuario'}</p>
                                                      <p className="text-xs text-gray-400">ID: {c.id}</p>
                                                  </div>
                                              </div>
                                              <div className="text-right">
-                                                 <p className="text-sm font-medium text-gray-900">{c.phone}</p>
+                                                 <p className="text-sm font-medium text-gray-900">{c.phone || c.email || 'Sin contacto'}</p>
                                                  <p className="text-xs text-green-500 font-bold">Activo</p>
                                              </div>
                                          </div>

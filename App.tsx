@@ -17,13 +17,8 @@ const EMAIL_SERVICE_ID = "service_ytz8gpd";
 const EMAIL_TEMPLATE_ID = "template_gkqblyu";
 const EMAIL_PUBLIC_KEY = "9DpJRC-7vdu7TOeXl";
 
-// ADMIN CONFIGURATION
-const ADMIN_EMAIL = "elderangelo071195@gmail.com";
-
 const App: React.FC = () => {
-  // GLOBAL LOADING STATE (Fixes F5 Refresh Bug)
-  const [authLoading, setAuthLoading] = useState(true);
-  
+  const [authLoading, setAuthLoading] = useState(true); // CRITICAL: Blocks UI until Auth is ready
   const [currentView, setCurrentView] = useState<ViewState>('LOGIN');
   const [userType, setUserType] = useState<UserType>('CLIENT');
   const [isAdmin, setIsAdmin] = useState(false);
@@ -92,42 +87,33 @@ const App: React.FC = () => {
   const [showBonusModal, setShowBonusModal] = useState(false);
   const [bonusAmount, setBonusAmount] = useState(0);
 
-  // ---------------------------------------------------------
-  // CRITICAL AUTH & LOADING LOGIC
-  // ---------------------------------------------------------
+  // Monitor Auth State & Admin Security
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(user => {
       setCurrentUser(user);
       
       if (user) {
-        console.log("Auth Initialized: User found", user.email);
+        // 1. Set basic user data
+        setUserData(prev => ({ ...prev, email: user.email || prev.email }));
         
-        // 1. Check Admin Status EXACTLY
-        const isAdminUser = user.email?.trim().toLowerCase() === ADMIN_EMAIL;
-        setIsAdmin(isAdminUser);
-        
-        // 2. Update Local State
-        setUserData(prev => ({ 
-            ...prev, 
-            name: user.displayName || prev.name,
-            email: user.email || prev.email,
-            image: user.photoURL || prev.image
-        }));
+        // 2. Check Admin Status STRICTLY
+        const ADMIN_EMAIL = "elderangelo071195@gmail.com";
+        const isAdm = user.email?.trim().toLowerCase() === ADMIN_EMAIL;
+        setIsAdmin(isAdm);
 
-        // 3. Auto-Redirect if on Login Screen
-        setCurrentView(prev => prev === 'LOGIN' ? 'HOME' : prev);
+        // 3. Auto-Redirect if on Login screen
+        if (currentView === 'LOGIN') {
+            setCurrentView('HOME');
+        }
       } else {
-        console.log("Auth Initialized: No user");
         setIsAdmin(false);
-        setCurrentView('LOGIN');
       }
       
-      // 4. Stop Loading
+      // 4. Release Loading Lock
       setAuthLoading(false);
     });
-    
     return () => unsubscribe();
-  }, []);
+  }, [currentView]); // Added dependency to ensure redirect works
 
   // Scroll to top when view changes
   useEffect(() => {
@@ -154,7 +140,6 @@ const App: React.FC = () => {
         image: user.photoURL || prev.image
       }));
       
-      // User is handled by onAuthStateChanged, but we can force navigation here just in case
       return user;
     } catch (error: any) {
       console.error("Social login error:", error);
@@ -168,13 +153,18 @@ const App: React.FC = () => {
                  photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
              };
              setUserData(prev => ({ ...prev, name: mockUser.displayName, email: mockUser.email, image: mockUser.photoURL }));
+             
+             // Proceed to app
              navigateTo(userType === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
              return;
           }
       } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
           console.log("User closed popup");
+          // Do nothing, just let them try again
       } else {
-          alert(`Error al iniciar sesión: ${error.message || 'Inténtalo de nuevo'}`);
+          // Safe error message extraction
+          const msg = error.message || "Error desconocido";
+          alert(`Error al iniciar sesión: ${msg}`);
       }
     }
   };
@@ -302,25 +292,10 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
-    // AUTH LOADING SCREEN - Dark Premium
-    if (authLoading) {
-        return (
-            <div className="min-h-screen w-full flex flex-col items-center justify-center bg-gray-900 animate-in fade-in duration-500">
-                <div className="relative mb-8">
-                    <div className="absolute inset-0 bg-blue-500 rounded-full blur-xl opacity-20 animate-pulse"></div>
-                    <div className="w-24 h-24 bg-black rounded-3xl flex items-center justify-center relative z-10 border border-gray-800 shadow-2xl">
-                        <span className="text-white text-5xl font-black">S</span>
-                    </div>
-                </div>
-                <Loader2 className="text-blue-500 animate-spin mb-4" size={32} />
-                <p className="text-gray-500 text-xs font-bold tracking-[0.3em] uppercase animate-pulse">Cargando The Source...</p>
-            </div>
-        );
-    }
-
     switch (currentView) {
       case 'LOGIN':
         return <LoginScreen 
+            currentUser={currentUser} // Pass currentUser to save to DB
             onLogin={(type, data) => {
                 setUserData({ ...userData, ...data });
                 setUserType(type);
@@ -437,7 +412,23 @@ const App: React.FC = () => {
     }
   };
 
-  const showNav = !['LOGIN', 'ONBOARDING_PROVIDER', 'JOB_CLOSING', 'ADMIN', 'PROFILE_DETAIL', 'LEAD_DETAIL', 'TERMS'].includes(currentView) && !authLoading;
+  const showNav = !['LOGIN', 'ONBOARDING_PROVIDER', 'JOB_CLOSING', 'ADMIN', 'PROFILE_DETAIL', 'LEAD_DETAIL', 'TERMS'].includes(currentView);
+
+  // 5. LOADING SCREEN (Dark Premium Aesthetic)
+  if (authLoading) {
+      return (
+          <div className="min-h-screen w-full bg-gray-900 flex flex-col items-center justify-center animate-in fade-in">
+              <div className="relative mb-8">
+                  <div className="w-24 h-24 bg-gray-800 rounded-3xl flex items-center justify-center relative z-10 shadow-inner border border-gray-700">
+                      <span className="text-white text-5xl font-black">S</span>
+                  </div>
+                  <div className="absolute inset-0 bg-blue-500 rounded-3xl blur-xl opacity-20 animate-pulse"></div>
+              </div>
+              <Loader2 size={32} className="text-blue-500 animate-spin mb-4" />
+              <p className="text-gray-500 text-xs font-bold tracking-[0.3em] uppercase">Cargando The Source...</p>
+          </div>
+      );
+  }
 
   return (
     // Main Container - Full Screen, Adaptive
@@ -471,7 +462,6 @@ const App: React.FC = () => {
 
            <div className="p-4 border-t border-gray-100">
               <button 
-                type="button"
                 onClick={() => {
                    if(confirm("¿Cerrar Sesión?")) {
                        auth.signOut();
@@ -520,11 +510,7 @@ const App: React.FC = () => {
 
 // Component for Mobile Bottom Nav Button
 const NavBtn: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
-  <button 
-    type="button" 
-    onClick={onClick} 
-    className={`flex flex-col items-center gap-1 transition-colors min-w-[60px] py-1.5 px-2 rounded-xl ${active ? 'text-blue-600 bg-blue-50' : 'hover:text-gray-600 hover:bg-gray-50'}`}
-  >
+  <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors min-w-[60px] py-1.5 px-2 rounded-xl ${active ? 'text-blue-600 bg-blue-50' : 'hover:text-gray-600 hover:bg-gray-50'}`}>
     <Icon size={24} strokeWidth={active ? 2.5 : 2} />
     <span className="text-[10px] font-medium">{label}</span>
   </button>
@@ -532,11 +518,7 @@ const NavBtn: React.FC<{ active: boolean, icon: React.ElementType, label: string
 
 // Component for Desktop Sidebar Item
 const NavSidebarItem: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
-  <button 
-    type="button" 
-    onClick={onClick} 
-    className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ${active ? 'bg-gray-900 text-white shadow-lg shadow-gray-200' : 'text-gray-500 hover:bg-gray-50'}`}
-  >
+  <button onClick={onClick} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ${active ? 'bg-gray-900 text-white shadow-lg shadow-gray-200' : 'text-gray-500 hover:bg-gray-50'}`}>
       <Icon size={20} />
       <span className="font-bold text-sm">{label}</span>
   </button>

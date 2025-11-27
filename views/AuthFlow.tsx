@@ -7,11 +7,12 @@ import { UserData, Tariff, PaymentMethod } from '../types';
 import { TermsContent } from './ClientFlow';
 import { storage, db } from '../firebaseConfig';
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
-import { collection, query, where, getDocs, addDoc, updateDoc, doc } from "firebase/firestore";
+import { collection, query, where, getDocs, addDoc, updateDoc, doc, setDoc } from "firebase/firestore";
 
 interface LoginProps {
   onLogin: (type: 'CLIENT' | 'PROVIDER', initialData?: Partial<UserData>) => void;
   onSocialLogin: (provider: 'google' | 'facebook') => Promise<void>;
+  currentUser?: any; // Added currentUser prop
 }
 
 // Custom Icons for aesthetic buttons
@@ -37,7 +38,7 @@ const BOLIVIA_CITIES = [
   "Montero", "Warnes", "Cotoca", "Yacuiba", "Riberalta", "Viacha"
 ];
 
-export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) => {
+export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin, currentUser }) => {
   const [step, setStep] = useState<'LANDING' | 'DETAILS' | 'PHOTO'>('LANDING');
   const [tempData, setTempData] = useState({ name: '', location: '', phone: '', email: '', image: '' });
   
@@ -111,6 +112,29 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
     }
   };
 
+  const saveClientProfile = async () => {
+      if (!currentUser?.uid) {
+          onLogin('CLIENT', tempData);
+          return;
+      }
+      try {
+          // SAVE TO FIRESTORE 'users' COLLECTION
+          // Using setDoc with { merge: true } prevents duplicates and just updates existing info
+          await setDoc(doc(db, "users", currentUser.uid), {
+              ...tempData,
+              uid: currentUser.uid,
+              userType: 'CLIENT',
+              lastLogin: new Date().toISOString()
+          }, { merge: true });
+          
+          console.log("Client profile saved to Cloud");
+          onLogin('CLIENT', tempData);
+      } catch (error) {
+          console.error("Error saving client profile:", error);
+          onLogin('CLIENT', tempData); // Proceed anyway locally
+      }
+  };
+
   if (step === 'LANDING') {
     return (
       <div className="flex flex-col min-h-screen bg-gradient-to-b from-gray-50 to-gray-300 relative overflow-hidden items-center justify-center">
@@ -147,17 +171,12 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
                 </div>
               </div>
 
-              <button 
-                type="button"
-                onClick={() => onSocialLogin('google')} 
-                className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-gray-200 border border-gray-100 flex items-center justify-center gap-3 transition-transform active:scale-95"
-              >
+              <button onClick={() => onSocialLogin('google')} className="w-full bg-white hover:bg-gray-50 text-gray-700 font-bold py-3.5 px-4 rounded-2xl shadow-lg shadow-gray-200 border border-gray-100 flex items-center justify-center gap-3 transition-transform active:scale-95">
                  <GoogleIcon />
                  <span>Continuar con Google</span>
               </button>
 
               <button 
-                type="button"
                 onClick={() => onSocialLogin('facebook')} 
                 className="w-full bg-[#1877F2]/50 cursor-not-allowed text-white/80 font-bold py-3.5 px-4 rounded-2xl shadow-none border border-blue-200/50 flex items-center justify-center gap-3 transition-none relative overflow-hidden"
               >
@@ -176,7 +195,7 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
 
               <div className="mt-4 text-center">
                  <p className="text-gray-400 text-xs mb-1">¿Aún no eres parte?</p>
-                 <button type="button" onClick={() => setStep('DETAILS')} className="text-gray-900 font-black text-sm hover:underline tracking-wide">
+                 <button onClick={() => setStep('DETAILS')} className="text-gray-900 font-black text-sm hover:underline tracking-wide">
                    CREAR CUENTA
                  </button>
               </div>
@@ -304,7 +323,7 @@ export const LoginScreen: React.FC<LoginProps> = ({ onLogin, onSocialLogin }) =>
             </button>
 
             <div className="w-full space-y-3">
-              <Button fullWidth onClick={() => onLogin('CLIENT', tempData)} disabled={uploadingPhoto} className="h-14 text-lg bg-gray-900 hover:bg-black shadow-xl shadow-gray-300">
+              <Button fullWidth onClick={saveClientProfile} disabled={uploadingPhoto} className="h-14 text-lg bg-gray-900 hover:bg-black shadow-xl shadow-gray-300">
                  {tempData.image ? 'Finalizar Registro' : 'Continuar sin foto'}
               </Button>
               
@@ -459,44 +478,38 @@ export const ProviderOnboarding: React.FC<{
 
       const uniqueName = `${Date.now()}_${file.name}`;
 
-      if (type === 'ID_FRONT') {
-          setUploadingIdFront(true);
-          try {
-              const url = await uploadImageToFirebase(file, `documents/id_front/${uniqueName}`);
-              setFormData(prev => ({ ...prev, idFront: url }));
-          } finally {
-              setUploadingIdFront(false);
-          }
-      } else if (type === 'ID_BACK') {
-          setUploadingIdBack(true);
-          try {
-              const url = await uploadImageToFirebase(file, `documents/id_back/${uniqueName}`);
-              setFormData(prev => ({ ...prev, idBack: url }));
-          } finally {
-              setUploadingIdBack(false);
-          }
-      } else if (type === 'CV') {
-          setUploadingCV(true);
-          try {
-              const url = await uploadImageToFirebase(file, `documents/cv/${uniqueName}`);
-              setFormData(prev => ({ ...prev, cv: url }));
-          } finally {
-              setUploadingCV(false);
-          }
-      } else if (type === 'QR') {
-          setUploadingQR(true);
-          try {
-              const url = await uploadImageToFirebase(file, `payments/qr/${uniqueName}`);
-              setQrUrl(url);
-              alert("QR subido correctamente. Ahora puedes agregar el método de pago.");
-          } finally {
-              setUploadingQR(false);
-          }
+      try {
+        if (type === 'ID_FRONT') {
+            setUploadingIdFront(true);
+            const url = await uploadImageToFirebase(file, `documents/id_front/${uniqueName}`);
+            setFormData(prev => ({ ...prev, idFront: url }));
+        } else if (type === 'ID_BACK') {
+            setUploadingIdBack(true);
+            const url = await uploadImageToFirebase(file, `documents/id_back/${uniqueName}`);
+            setFormData(prev => ({ ...prev, idBack: url }));
+        } else if (type === 'CV') {
+            setUploadingCV(true);
+            const url = await uploadImageToFirebase(file, `documents/cv/${uniqueName}`);
+            setFormData(prev => ({ ...prev, cv: url }));
+        } else if (type === 'QR') {
+            setUploadingQR(true);
+            const url = await uploadImageToFirebase(file, `payments/qr/${uniqueName}`);
+            setQrUrl(url);
+            alert("QR subido correctamente. Ahora puedes agregar el método de pago.");
+        }
+      } catch (error) {
+        console.error("File upload failed", error);
+      } finally {
+        // Stop spinners safely
+        setUploadingIdFront(false);
+        setUploadingIdBack(false);
+        setUploadingCV(false);
+        setUploadingQR(false);
       }
   };
 
   const handleSmartSubmit = async () => {
-    console.log("Guardando datos...");
+    console.log("Guardando datos..."); // DEBUG LOG
     setSubmitStage('ENCRYPTING');
     
     // --- ANTI-DUPLICATE VALIDATION ---
@@ -551,8 +564,8 @@ export const ProviderOnboarding: React.FC<{
         onComplete(formData);
         
     } catch (error) {
-        console.error("Error saving profile:", error);
-        alert("Error al guardar perfil");
+        console.error("Error saving profile:", error); // DEBUG ERROR
+        alert("Error al guardar perfil: " + (error as any).message);
         setSubmitStage('IDLE');
     }
   };
@@ -616,8 +629,8 @@ export const ProviderOnboarding: React.FC<{
                       const isActive = formData.professions?.includes(cat.label);
                       return (
                         <button 
-                          key={cat.id} 
                           type="button"
+                          key={cat.id} 
                           onClick={() => toggleProfession(cat.label)}
                           className={`flex items-center gap-2 px-3 py-2 rounded-xl border transition-all ${
                             isActive ? 'bg-gray-900 border-gray-900 text-white' : 'bg-white border-gray-200 text-gray-600'
@@ -691,7 +704,7 @@ export const ProviderOnboarding: React.FC<{
                          {PRICING_UNITS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
                       </select>
                    </div>
-                   <Button variant="secondary" fullWidth onClick={addTariff}>+ Agregar Tarifa</Button>
+                   <Button variant="secondary" fullWidth onClick={addTariff} type="button">+ Agregar Tarifa</Button>
                 </div>
              </div>
           )}
@@ -806,7 +819,7 @@ export const ProviderOnboarding: React.FC<{
                             {uploadingQR ? <Loader2 className="animate-spin" size={16} /> : <Upload size={16}/>} 
                             {uploadingQR ? 'Subiendo QR...' : qrUrl ? 'QR Cargado Exitosamente' : 'Subir Imagen QR (Opcional)'}
                         </button>
-                        <Button variant="secondary" fullWidth onClick={addPaymentMethod} disabled={!tempPayment.entity || !tempPayment.number}>
+                        <Button variant="secondary" fullWidth onClick={addPaymentMethod} disabled={!tempPayment.entity || !tempPayment.number} type="button">
                             Agregar Método
                         </Button>
                     </div>
@@ -814,7 +827,7 @@ export const ProviderOnboarding: React.FC<{
 
                 <div className="bg-blue-50 p-4 rounded-2xl mb-4">
                    <p className="text-sm text-blue-800 leading-relaxed mb-2">
-                      Al continuar, aceptas los <button type="button" onClick={() => setShowTermsModal(true)} className="font-bold underline cursor-pointer">Términos y Condiciones</button>, Políticas de Privacidad y el modelo de cobro de <strong>Source Solution APP</strong>.
+                      Al continuar, aceptas los <button onClick={() => setShowTermsModal(true)} className="font-bold underline cursor-pointer">Términos y Condiciones</button>, Políticas de Privacidad y el modelo de cobro de <strong>Source Solution APP</strong>.
                    </p>
                    <p className="text-xs text-blue-600 font-bold">
                        * The Source cobra una comisión del 5% sobre el total de los servicios prestados.
@@ -836,7 +849,7 @@ export const ProviderOnboarding: React.FC<{
                 disabled={!formData.acceptedTerms} 
              />
           ) : (
-            <Button fullWidth onClick={() => setStep(step + 1)} disabled={step === 1 && !locationCoords}>
+            <Button fullWidth onClick={() => setStep(step + 1)} disabled={step === 1 && !locationCoords} type="button">
               {step === 1 && !locationCoords ? 'Requiere Ubicación' : 'Continuar'}
             </Button>
           )}
