@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Home, Search, PlusSquare, User, Inbox, Grid, Monitor, Wallet, LogOut, Menu } from 'lucide-react';
+import { Home, Search, PlusSquare, User, Inbox, Grid, Monitor, Wallet, LogOut, Menu, Snowflake } from 'lucide-react';
 import { ViewState, UserType, UserData, Provider, Lead, AdminData, JobPost, UserDocument } from './types';
 import { INITIAL_PROVIDERS } from './constants';
 import emailjs from '@emailjs/browser';
@@ -11,6 +11,7 @@ import { LoginScreen, ProviderOnboarding } from './views/AuthFlow';
 import { HomeView, ProfileDetail, ClientProfileView, RequestServiceView, SearchView, TermsView } from './views/ClientFlow';
 import { WorkerDashboard, WalletView, MyServicesPanel, JobClosingSimulation, OpportunitiesView, LeadDetailView } from './views/ProviderFlow';
 import { AdminDashboard } from './views/AdminFlow';
+import { Snowfall } from './components/UIComponents';
 
 // EMAILJS CONFIGURATION - REAL PRODUCTION CREDENTIALS
 const EMAIL_SERVICE_ID = "service_ytz8gpd";
@@ -22,6 +23,7 @@ const App: React.FC = () => {
   const [userType, setUserType] = useState<UserType>('CLIENT');
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUser, setCurrentUser] = useState<any>(null); // Firebase User
+  const [authLoading, setAuthLoading] = useState(true);
   
   // App State
   const [userData, setUserData] = useState<UserData>({
@@ -92,25 +94,42 @@ const App: React.FC = () => {
       setCurrentUser(user);
       if (user) {
         setUserData(prev => ({ ...prev, email: user.email || prev.email }));
+        
+        // ADMIN CHECK (Exact Match)
+        const ADMIN_EMAIL = "elderangelo071195@gmail.com";
+        if (user.email && user.email.trim().toLowerCase() === ADMIN_EMAIL) {
+            setIsAdmin(true);
+        } else {
+            setIsAdmin(false);
+        }
+
+        // Auto-redirect if on login screen
+        if (currentView === 'LOGIN') {
+            setCurrentView('HOME');
+        }
       }
+      setAuthLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [currentView]);
 
   // Scroll to top when view changes
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [currentView]);
 
-  // Admin Security Logic - EXACT MATCH REQUIRED
-  useEffect(() => {
-    const ADMIN_EMAIL = "elderangelo071195@gmail.com";
-    if (userData.email && userData.email.trim().toLowerCase() === ADMIN_EMAIL) {
-        setIsAdmin(true);
-    } else {
-        setIsAdmin(false);
-    }
-  }, [userData.email]);
+  const processLogin = (user: any) => {
+      console.log("Social Login Success:", user.email);
+      
+      setUserData(prev => ({
+        ...prev,
+        name: user.displayName || prev.name,
+        email: user.email || prev.email,
+        image: user.photoURL || prev.image
+      }));
+      
+      setCurrentView(userType === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
+  };
 
   const handleSocialLogin = async (providerName: 'google' | 'facebook') => {
     if (providerName === 'facebook') {
@@ -121,20 +140,14 @@ const App: React.FC = () => {
     try {
       const provider = googleProvider;
       const result = await signInWithPopup(auth, provider);
-      const user = result.user;
-      
-      console.log("Social Login Success:", user.email);
-      
-      setUserData(prev => ({
-        ...prev,
-        name: user.displayName || prev.name,
-        email: user.email || prev.email,
-        image: user.photoURL || prev.image
-      }));
-      
-      return user;
+      processLogin(result.user);
     } catch (error: any) {
       console.error("Social login error:", error);
+      
+      const errorMessage = typeof error === 'object' && error !== null && 'message' in error 
+        ? (error as any).message 
+        : 'Error desconocido';
+
       if (error.code === 'auth/unauthorized-domain') {
           // FALLBACK FOR PREVIEW ENVIRONMENTS
           const confirmMock = window.confirm("Error de Dominio: Este entorno de vista previa no está autorizado en Firebase. ¿Deseas ingresar con una sesión simulada para probar la app?");
@@ -144,19 +157,15 @@ const App: React.FC = () => {
                  email: "usuario@prueba.com",
                  photoURL: "https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
              };
-             setUserData(prev => ({ ...prev, name: mockUser.displayName, email: mockUser.email, image: mockUser.photoURL }));
-             
-             // Proceed to app
-             navigateTo(userType === 'CLIENT' ? 'HOME' : 'ONBOARDING_PROVIDER');
+             processLogin(mockUser);
              return;
           }
       } else if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
           console.log("User closed popup");
           // Do nothing, just let them try again
       } else {
-          alert(`Error al iniciar sesión: ${error.message || 'Inténtalo de nuevo'}`);
+          alert(`Error al iniciar sesión: ${errorMessage}`);
       }
-      // Removed re-throw to prevent [object Object] error in UI
     }
   };
 
@@ -283,6 +292,15 @@ const App: React.FC = () => {
   };
 
   const renderContent = () => {
+    if (authLoading) {
+        return (
+            <div className="min-h-screen flex flex-col items-center justify-center bg-gray-900 text-white">
+                <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+                <p className="text-sm font-bold tracking-widest uppercase animate-pulse">Cargando The Source...</p>
+            </div>
+        );
+    }
+
     switch (currentView) {
       case 'LOGIN':
         return <LoginScreen 
@@ -412,8 +430,16 @@ const App: React.FC = () => {
       {showNav && (
         <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-100 h-screen sticky top-0 shadow-sm z-50">
            <div className="p-6">
-              <h1 className="text-2xl font-black text-gray-900 tracking-tighter">THE SOURCE</h1>
-              <p className="text-[10px] font-bold text-blue-600 tracking-[0.3em] uppercase">Solutions App</p>
+              <h1 className="text-2xl font-black tracking-tighter flex items-center gap-2 text-transparent bg-clip-text bg-gradient-to-r from-red-700 via-red-600 to-amber-600">
+                  THE SOURCE
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm text-red-600">
+                        <path d="M12 3C9 3 6 5 5 8C5 10 7 12 7 14C7 16 6 18 5 20C5 21.5 6.5 23 8.5 23H15.5C17.5 23 19 21.5 19 20C18 18 17 16 17 14C17 12 19 10 19 8C17.5 5 14.5 3 11 3" fill="#DC2626" stroke="#B91C1C" strokeWidth="1.5"/>
+                        <circle cx="20" cy="22" r="2.5" fill="white" stroke="#E5E7EB"/>
+                        <path d="M5 20C5 20 8 19 12 19C16 19 19 20 19 20" stroke="white" strokeWidth="3" strokeLinecap="round"/>
+                        <circle cx="11" cy="3" r="2.5" fill="white" stroke="#E5E7EB"/>
+                  </svg>
+              </h1>
+              <p className="text-[10px] font-bold text-red-600 tracking-[0.3em] uppercase">Holiday Edition</p>
            </div>
            
            <nav className="flex-1 px-4 space-y-2">
@@ -481,7 +507,7 @@ const App: React.FC = () => {
 
 // Component for Mobile Bottom Nav Button
 const NavBtn: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
-  <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors min-w-[60px] py-1.5 px-2 rounded-xl ${active ? 'text-blue-600 bg-blue-50' : 'hover:text-gray-600 hover:bg-gray-50'}`}>
+  <button onClick={onClick} className={`flex flex-col items-center gap-1 transition-colors min-w-[60px] py-1.5 px-2 rounded-xl ${active ? 'text-red-600 bg-red-50' : 'hover:text-gray-600 hover:bg-gray-50'}`}>
     <Icon size={24} strokeWidth={active ? 2.5 : 2} />
     <span className="text-[10px] font-medium">{label}</span>
   </button>
@@ -489,7 +515,7 @@ const NavBtn: React.FC<{ active: boolean, icon: React.ElementType, label: string
 
 // Component for Desktop Sidebar Item
 const NavSidebarItem: React.FC<{ active: boolean, icon: React.ElementType, label: string, onClick: () => void }> = ({ active, icon: Icon, label, onClick }) => (
-  <button onClick={onClick} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ${active ? 'bg-gray-900 text-white shadow-lg shadow-gray-200' : 'text-gray-500 hover:bg-gray-50'}`}>
+  <button onClick={onClick} className={`flex items-center gap-3 w-full p-3 rounded-xl transition-all ${active ? 'bg-red-700 text-white shadow-lg shadow-red-200' : 'text-gray-500 hover:bg-gray-50'}`}>
       <Icon size={20} />
       <span className="font-bold text-sm">{label}</span>
   </button>
