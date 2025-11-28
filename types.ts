@@ -45,18 +45,22 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  password?: string; // Added for authentication
   role: UserRole;
   balance: number;
-  loyaltyPoints: number; // Added for loyalty system
+  loyaltyPoints: number;
+  isOnline?: boolean; // Real-time status
+  registeredAt?: string; // For Admin tracking
+  lastLogin?: string;
 }
 
 export interface Transaction {
   id: string;
-  type: 'DEPOSIT' | 'PURCHASE' | 'SALE' | 'REDEEM'; // Added REDEEM type
+  type: 'DEPOSIT' | 'PURCHASE' | 'SALE' | 'REDEEM';
   amount: number;
   date: string;
   description: string;
-  userEmail?: string; // Added for financial reporting
+  userEmail?: string;
 }
 
 export interface RechargeRequest {
@@ -67,15 +71,15 @@ export interface RechargeRequest {
   receiptImage: string; // Base64 string
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
   date: string;
-  approvalDate?: string; // ISO string, added for notification logic
+  approvalDate?: string;
 }
 
 export interface PaymentMethod {
   id: string;
-  name: string; // e.g., "Banco Union", "QR Simple"
+  name: string;
   type: 'QR' | 'BANK_INFO';
-  imageData?: string; // Base64 for QR
-  details?: string; // Text for Account Number, etc.
+  imageData?: string;
+  details?: string;
 }
 
 export interface ChatMessage {

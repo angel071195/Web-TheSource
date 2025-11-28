@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
 import { DollarSign, Users, ShoppingCart, Activity, Bell, Send, Check } from 'lucide-react';
 import Button from '../../components/Button';
 
 const AdminDashboard: React.FC = () => {
-  const { transactions, services, subscriptions, fulfillSubscription } = useApp();
+  const { transactions, services, subscriptions, fulfillSubscription, allUsers } = useApp();
 
   // Pending subscriptions (waiting for admin to fill credentials)
   const pendingSubscriptions = subscriptions.filter(s => s.status === 'PENDING');
+  
+  // Real-time Counts from Context (User DB)
+  const activeUsersCount = allUsers.filter(u => u.isOnline).length;
+  const registeredUsersCount = allUsers.length;
   
   // State for the fulfillment form
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null);
@@ -53,7 +58,7 @@ const AdminDashboard: React.FC = () => {
     { name: 'Sem 4', ingresos: 800 },
   ];
 
-  const StatCard = ({ title, value, icon: Icon, color }: any) => (
+  const StatCard = ({ title, value, icon: Icon, color, subtext }: any) => (
     <div className="bg-dark-800 p-6 rounded-xl border border-gray-700 shadow-lg">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-gray-400 font-medium">{title}</h3>
@@ -62,6 +67,7 @@ const AdminDashboard: React.FC = () => {
         </div>
       </div>
       <p className="text-3xl font-bold text-white">{value}</p>
+      {subtext && <p className="text-xs text-gray-500 mt-1">{subtext}</p>}
     </div>
   );
 
@@ -159,7 +165,8 @@ const AdminDashboard: React.FC = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Ingresos Totales (Ventas)" value={`${totalRevenue.toFixed(2)} Bs`} icon={DollarSign} color="bg-green-500" />
         <StatCard title="Ventas Totales" value={totalSales} icon={ShoppingCart} color="bg-blue-500" />
-        <StatCard title="Usuarios Activos" value="1,234" icon={Users} color="bg-purple-500" />
+        {/* Updated Active Users Card */}
+        <StatCard title="Usuarios Online" value={activeUsersCount} icon={Users} color="bg-green-500" subtext={`${registeredUsersCount} registrados totales`} />
         <StatCard title="Stock Crítico" value={services.filter(s => s.stock < 3).length} icon={Activity} color="bg-red-500" />
       </div>
 

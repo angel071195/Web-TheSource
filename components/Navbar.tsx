@@ -1,17 +1,27 @@
+
 import React from 'react';
 import { useApp } from '../context/AppContext';
-import { LogOut, Wallet, User as UserIcon, ShoppingCart, MonitorPlay } from 'lucide-react';
+import { LogOut, Wallet, User as UserIcon, ShoppingCart, MonitorPlay, Menu } from 'lucide-react';
 import Button from './Button';
 
 const Navbar: React.FC = () => {
-  const { user, logout } = useApp();
+  const { user, logout, toggleMobileMenu } = useApp();
 
   return (
     <nav className="sticky top-0 z-50 w-full border-b border-gray-700 bg-dark-900/80 backdrop-blur text-white">
       <div className="container mx-auto px-4 h-16 flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <MonitorPlay className="h-8 w-8 text-brand-500" />
-          <span className="text-xl font-bold tracking-tight">StreamHub</span>
+           {/* Hamburger Menu - Visible on Mobile Only */}
+           {user && (
+             <button onClick={toggleMobileMenu} className="md:hidden text-gray-300 hover:text-white p-1">
+               <Menu className="h-6 w-6" />
+             </button>
+           )}
+          
+          <div className="flex items-center gap-2">
+            <MonitorPlay className="h-8 w-8 text-brand-500" />
+            <span className="text-xl font-bold tracking-tight hidden sm:block">StreamHub</span>
+          </div>
         </div>
 
         {user && (

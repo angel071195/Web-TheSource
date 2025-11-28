@@ -90,6 +90,7 @@ export const MOCK_USER: User = {
   id: 'u1',
   name: 'Carlos Cliente',
   email: 'carlos@example.com',
+  password: 'password123',
   role: UserRole.USER,
   balance: 50.00,
   loyaltyPoints: 0
@@ -98,9 +99,10 @@ export const MOCK_USER: User = {
 export const MOCK_ADMIN: User = {
   id: 'a1',
   name: 'Admin Master',
-  email: 'admin@streamhub.com',
+  email: 'elderangelo071195@gmail.com',
+  password: '11353726012SC',
   role: UserRole.ADMIN,
-  balance: 99999.00,
+  balance: 0.00, // Updated to 0 as requested
   loyaltyPoints: 0
 };
 

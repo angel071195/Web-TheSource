@@ -5,7 +5,9 @@ import { MOCK_SERVICES, MOCK_USER, MOCK_ADMIN, INITIAL_SUBS } from '../constants
 
 interface AppContextType {
   user: User | null;
-  login: (role: UserRole, email?: string) => void;
+  allUsers: User[]; // Database of all users
+  login: (email: string, password?: string) => { success: boolean, message?: string };
+  registerUser: (email: string, password: string, name: string) => { success: boolean, message?: string };
   logout: () => void;
   services: Service[];
   subscriptions: Subscription[];
@@ -25,6 +27,11 @@ interface AppContextType {
   redeemPoints: () => void;
   addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => void;
   deletePaymentMethod: (id: string) => void;
+  
+  // Mobile UI
+  isMobileMenuOpen: boolean;
+  toggleMobileMenu: () => void;
+  closeMobileMenu: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -41,15 +48,31 @@ const loadFromStorage = (key: string, defaultValue: any) => {
 };
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  // PERSISTENCE: Load initial state from LocalStorage if available
+  // PERSISTENCE: Load initial state from LocalStorage
   const [user, setUser] = useState<User | null>(() => loadFromStorage('streamhub_user', null));
   
-  const [userBalances, setUserBalances] = useState<Record<string, number>>(() => 
-    loadFromStorage('streamhub_balances', {
+  // USER DATABASE (Simulated Backend)
+  const [allUsers, setAllUsers] = useState<User[]>(() => {
+     const storedUsers = loadFromStorage('streamhub_users_db', []);
+     // Ensure MOCK_ADMIN exists if DB is empty or refresh logic handled in login
+     if (storedUsers.length === 0) {
+       return [{...MOCK_ADMIN, isOnline: false, registeredAt: new Date().toISOString()}];
+     }
+     return storedUsers;
+  });
+
+  const [userBalances, setUserBalances] = useState<Record<string, number>>(() => {
+    const balances = loadFromStorage('streamhub_balances', {
       [MOCK_USER.email]: MOCK_USER.balance,
       [MOCK_ADMIN.email]: MOCK_ADMIN.balance
-    })
-  );
+    });
+    // OBLIGATORY FIX: Reset Admin balance to 0 if it equals the old mock value (99999) 
+    // to strictly comply with the order "update to zero".
+    if (balances[MOCK_ADMIN.email] === 99999) {
+        balances[MOCK_ADMIN.email] = 0;
+    }
+    return balances;
+  });
 
   const [userPoints, setUserPoints] = useState<Record<string, number>>(() => 
     loadFromStorage('streamhub_points', {
@@ -63,9 +86,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [transactions, setTransactions] = useState<Transaction[]>(() => loadFromStorage('streamhub_txs', []));
   const [rechargeRequests, setRechargeRequests] = useState<RechargeRequest[]>(() => loadFromStorage('streamhub_reqs', []));
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(() => loadFromStorage('streamhub_methods', []));
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // PERSISTENCE: Save to LocalStorage whenever state changes
+  // PERSISTENCE EFFECTS
   useEffect(() => { localStorage.setItem('streamhub_user', JSON.stringify(user)); }, [user]);
+  useEffect(() => { localStorage.setItem('streamhub_users_db', JSON.stringify(allUsers)); }, [allUsers]);
   useEffect(() => { localStorage.setItem('streamhub_balances', JSON.stringify(userBalances)); }, [userBalances]);
   useEffect(() => { localStorage.setItem('streamhub_points', JSON.stringify(userPoints)); }, [userPoints]);
   useEffect(() => { localStorage.setItem('streamhub_services', JSON.stringify(services)); }, [services]);
@@ -74,8 +99,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   useEffect(() => { localStorage.setItem('streamhub_reqs', JSON.stringify(rechargeRequests)); }, [rechargeRequests]);
   useEffect(() => { localStorage.setItem('streamhub_methods', JSON.stringify(paymentMethods)); }, [paymentMethods]);
 
-
-  // Auto-sync user balance if it changes in the background (e.g. Admin approved while user is logged in)
+  // Sync current user with DB changes (e.g., balance updates)
   useEffect(() => {
     if (user && user.email) {
       const currentStoredBalance = userBalances[user.email];
@@ -87,6 +111,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [userBalances, userPoints, user?.email]); 
 
+  // Mobile Menu Helpers
+  const toggleMobileMenu = () => setIsMobileMenuOpen(prev => !prev);
+  const closeMobileMenu = () => setIsMobileMenuOpen(false);
+
   const refreshUserBalance = () => {
     if (user && userBalances[user.email] !== undefined) {
       setUser(prev => prev ? { 
@@ -97,52 +125,104 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   };
 
-  const login = (role: UserRole, email?: string) => {
-    const emailToUse = email || (role === UserRole.ADMIN ? MOCK_ADMIN.email : MOCK_USER.email);
+  const registerUser = (email: string, password: string, name: string) => {
+    // Check if user exists
+    if (allUsers.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+      return { success: false, message: 'El correo ya está registrado.' };
+    }
+
+    const newUser: User = {
+      id: `u_${Date.now()}`,
+      name: name,
+      email: email,
+      password: password,
+      role: UserRole.USER,
+      balance: 0,
+      loyaltyPoints: 0,
+      registeredAt: new Date().toISOString(),
+      isOnline: false
+    };
+
+    setAllUsers(prev => [...prev, newUser]);
+    // Initialize balance
+    setUserBalances(prev => ({ ...prev, [email]: 0 }));
+    setUserPoints(prev => ({ ...prev, [email]: 0 }));
+
+    return { success: true, message: 'Usuario registrado correctamente.' };
+  };
+
+  const login = (email: string, password?: string) => {
+    const normalizedEmail = email.trim().toLowerCase();
     
-    // Ensure the user has a record in our balance "DB"
-    let currentBalance = userBalances[emailToUse];
-    if (currentBalance === undefined) {
-      // If new user (or mock user accessed via different email), init with 0 or mock default
-      currentBalance = (emailToUse === MOCK_USER.email) ? MOCK_USER.balance : 0;
-      setUserBalances(prev => ({ ...prev, [emailToUse]: currentBalance }));
+    // STRICT CHECK: Is this the Super Admin?
+    // Use constants logic to enforce specific credentials regardless of DB state
+    if (normalizedEmail === MOCK_ADMIN.email.toLowerCase()) {
+        if (password === MOCK_ADMIN.password) {
+            // Success Super Admin Login
+            const adminUser: User = { 
+                ...MOCK_ADMIN, 
+                isOnline: true, 
+                lastLogin: new Date().toISOString(),
+                // Use stored balance if available, else mock
+                balance: userBalances[MOCK_ADMIN.email] !== undefined ? userBalances[MOCK_ADMIN.email] : MOCK_ADMIN.balance
+            };
+            
+            // Sync with allUsers (if exists update, if not add)
+            setAllUsers(prev => {
+                const exists = prev.find(u => u.email.toLowerCase() === normalizedEmail);
+                if (exists) {
+                    return prev.map(u => u.email.toLowerCase() === normalizedEmail ? adminUser : u);
+                }
+                return [...prev, adminUser];
+            });
+            setUser(adminUser);
+            return { success: true };
+        } else {
+             return { success: false, message: 'Contraseña de administrador incorrecta.' };
+        }
     }
 
-    let currentPoints = userPoints[emailToUse] || 0;
+    // Normal user login logic
+    const foundUser = allUsers.find(u => u.email.toLowerCase() === normalizedEmail);
 
-    if (role === UserRole.ADMIN) {
-      setUser({
-        ...MOCK_ADMIN,
-        email: emailToUse,
-        balance: currentBalance,
-        loyaltyPoints: currentPoints
-      });
-    } else {
-      setUser({
-        ...MOCK_USER,
-        email: emailToUse,
-        name: emailToUse.split('@')[0],
-        balance: currentBalance,
-        loyaltyPoints: currentPoints
-      });
+    if (!foundUser) {
+       return { success: false, message: 'Usuario no encontrado.' };
     }
+
+    // Verify Password if provided
+    if (password && foundUser.password && foundUser.password !== password) {
+      return { success: false, message: 'Contraseña incorrecta.' };
+    }
+
+    // UPDATE ONLINE STATUS
+    const updatedUser = { 
+        ...foundUser, 
+        isOnline: true, 
+        lastLogin: new Date().toISOString(),
+        balance: userBalances[foundUser.email] || foundUser.balance // Sync balance on login
+    };
+
+    // Update in DB
+    setAllUsers(prev => prev.map(u => u.id === foundUser.id ? updatedUser : u));
+    
+    // Set Session
+    setUser(updatedUser);
+    return { success: true };
   };
 
   const logout = () => {
+    if (user) {
+        // Mark as offline in DB
+        setAllUsers(prev => prev.map(u => u.id === user.id ? { ...u, isOnline: false } : u));
+    }
     setUser(null);
     localStorage.removeItem('streamhub_user');
   };
 
   const addBalance = (amount: number) => {
     if (!user) return;
+    setUserBalances(prev => ({ ...prev, [user.email]: (prev[user.email] || 0) + amount }));
     
-    // Update Central Store
-    setUserBalances(prev => ({
-      ...prev,
-      [user.email]: (prev[user.email] || 0) + amount
-    }));
-
-    // Record transaction
     const newTransaction: Transaction = {
       id: Date.now().toString(),
       type: 'DEPOSIT',
@@ -156,7 +236,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const requestRecharge = (amount: number, receiptImage: string) => {
     if (!user) return;
-
     const newRequest: RechargeRequest = {
       id: `req_${Date.now()}`,
       userId: user.id,
@@ -166,7 +245,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       status: 'PENDING',
       date: new Date().toISOString()
     };
-
     setRechargeRequests(prev => [newRequest, ...prev]);
   };
 
@@ -177,45 +255,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const amountToCredit = finalAmount !== undefined ? finalAmount : request.amount;
     const now = new Date().toISOString();
 
-    // Update Request Status and Approval Date
     setRechargeRequests(prev => prev.map(req => 
       req.id === requestId 
-        ? { 
-            ...req, 
-            status: approved ? 'APPROVED' : 'REJECTED', 
-            amount: approved ? amountToCredit : req.amount,
-            approvalDate: approved ? now : undefined
-          } 
+        ? { ...req, status: approved ? 'APPROVED' : 'REJECTED', amount: approved ? amountToCredit : req.amount, approvalDate: approved ? now : undefined } 
         : req
     ));
 
     if (approved) {
-      // RULE: ADD TO USER BALANCE
-      // Update the central balance store for the user who requested the recharge
-      setUserBalances(prev => ({
-        ...prev,
-        [request.userEmail]: (prev[request.userEmail] || 0) + amountToCredit
-      }));
+      setUserBalances(prev => ({ ...prev, [request.userEmail]: (prev[request.userEmail] || 0) + amountToCredit }));
       
-      // RULE: Do NOT add to Admin Balance (MOCK_ADMIN.email). 
-      // Admin Balance only increases on SALES (Purchase of service).
-      // The amount is tracked in "Total Recargado" via the 'DEPOSIT' transaction type.
-
-      // --- LOYALTY POINTS FORMULA ---
       if (amountToCredit >= 10) {
         const pointsToAdd = Math.floor(amountToCredit / 10) * 0.10;
         if (pointsToAdd > 0) {
-           setUserPoints(prev => ({
-             ...prev,
-             [request.userEmail]: (prev[request.userEmail] || 0) + pointsToAdd
-           }));
+           setUserPoints(prev => ({ ...prev, [request.userEmail]: (prev[request.userEmail] || 0) + pointsToAdd }));
         }
       }
 
-      // Create Transaction Record
       const newTransaction: Transaction = {
         id: `tx_dep_${Date.now()}`,
-        type: 'DEPOSIT', // IMPORTANT: This type drives the "Total Recargado" icon in Admin Wallet
+        type: 'DEPOSIT',
         amount: amountToCredit,
         date: now,
         description: `Recarga Aprobada (ID: ${requestId})`,
@@ -227,18 +285,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const redeemPoints = () => {
     if (!user || !user.loyaltyPoints || user.loyaltyPoints <= 0) return;
-
     const pointsToRedeem = user.loyaltyPoints;
 
-    setUserBalances(prev => ({
-      ...prev,
-      [user.email]: (prev[user.email] || 0) + pointsToRedeem
-    }));
-
-    setUserPoints(prev => ({
-      ...prev,
-      [user.email]: 0
-    }));
+    setUserBalances(prev => ({ ...prev, [user.email]: (prev[user.email] || 0) + pointsToRedeem }));
+    setUserPoints(prev => ({ ...prev, [user.email]: 0 }));
 
     const newTransaction: Transaction = {
       id: `tx_redeem_${Date.now()}`,
@@ -253,22 +303,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   const buyService = (serviceId: string): { success: boolean; message: string } => {
     if (!user) return { success: false, message: 'Debes iniciar sesión.' };
-    
     const service = services.find(s => s.id === serviceId);
     if (!service) return { success: false, message: 'Servicio no encontrado.' };
     if (service.stock <= 0) return { success: false, message: 'Agotado.' };
     
     const currentBalance = userBalances[user.email] ?? user.balance;
+    if (currentBalance < service.price) return { success: false, message: 'Saldo insuficiente.' };
 
-    if (currentBalance < service.price) return { success: false, message: 'Saldo insuficiente en Billetera Móvil.' };
-
-    // RULE: Transaction Logic
-    // 1. Deduct from User Wallet
-    // 2. Add to Admin Wallet (Sales Income)
     setUserBalances(prev => ({
       ...prev,
       [user.email]: (prev[user.email] || 0) - service.price,
-      [MOCK_ADMIN.email]: (prev[MOCK_ADMIN.email] || 0) + service.price // Admin Income Increases Here
+      [MOCK_ADMIN.email]: (prev[MOCK_ADMIN.email] || 0) + service.price
     }));
 
     setServices(prev => prev.map(s => s.id === serviceId ? { ...s, stock: s.stock - 1 } : s));
@@ -278,55 +323,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       serviceId: service.id,
       serviceName: service.name,
       logoUrl: service.logoUrl,
-      buyerEmail: user.email, // STRICTLY RECORD WHO BOUGHT IT
+      buyerEmail: user.email,
       email: '', 
-      password: '', 
-      profileName: '', 
       purchaseDate: new Date().toISOString(),
       expiryDate: new Date(Date.now() + service.durationDays * 24 * 60 * 60 * 1000).toISOString(),
       status: 'PENDING' 
     };
     setSubscriptions(prev => [newSub, ...prev]);
 
-    // Transaction for User (Spending)
-    const userTx: Transaction = {
-      id: `tx_buy_${Date.now()}`,
-      type: 'PURCHASE',
-      amount: service.price,
-      date: new Date().toISOString(),
-      description: `Compra: ${service.name} (Pendiente de Envío)`,
-      userEmail: user.email
-    };
-    
-    // Transaction for Admin (Income)
-    const adminTx: Transaction = {
-      id: `tx_sale_${Date.now()}`,
-      type: 'SALE',
-      amount: service.price,
-      date: new Date().toISOString(),
-      description: `Venta: ${service.name} a ${user.email}`,
-      userEmail: user.email
-    };
-
+    const userTx: Transaction = { id: `tx_buy_${Date.now()}`, type: 'PURCHASE', amount: service.price, date: new Date().toISOString(), description: `Compra: ${service.name}`, userEmail: user.email };
+    const adminTx: Transaction = { id: `tx_sale_${Date.now()}`, type: 'SALE', amount: service.price, date: new Date().toISOString(), description: `Venta: ${service.name} a ${user.email}`, userEmail: user.email };
     setTransactions(prev => [userTx, adminTx, ...prev]);
 
-    return { success: true, message: '¡Compra exitosa! Esperando envío de credenciales por el administrador.' };
+    return { success: true, message: '¡Compra exitosa! Esperando envío de credenciales.' };
   };
 
   const fulfillSubscription = (subId: string, data: { email: string, password?: string, profileName?: string, message?: string }) => {
-    setSubscriptions(prev => prev.map(sub => {
-      if (sub.id === subId) {
-        return {
-          ...sub,
-          email: data.email,
-          password: data.password,
-          profileName: data.profileName,
-          adminMessage: data.message,
-          status: 'ACTIVE'
-        };
-      }
-      return sub;
-    }));
+    setSubscriptions(prev => prev.map(sub => 
+      sub.id === subId ? { ...sub, ...data, status: 'ACTIVE' } : sub
+    ));
   };
 
   const reportIssue = (subscriptionId: string) => {
@@ -338,36 +353,19 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   };
 
   const addService = (serviceData: Omit<Service, 'id'>) => {
-    const newService: Service = {
-        ...serviceData,
-        id: `svc_${Date.now()}`
-    };
+    const newService: Service = { ...serviceData, id: `svc_${Date.now()}` };
     setServices(prev => [...prev, newService]);
   };
 
   const adminRechargeUser = (email: string, amount: number) => {
-    // Manual Admin Recharge
-    setUserBalances(prev => ({
-      ...prev,
-      [email]: (prev[email] || 0) + amount
-    }));
-
-    const newTransaction: Transaction = {
-      id: `admin_dep_${Date.now()}`,
-      type: 'DEPOSIT', // Contributes to "Total Recargado"
-      amount: amount,
-      date: new Date().toISOString(),
-      description: `Recarga Admin a: ${email}`,
-      userEmail: email
-    };
+    // Check if user exists in DB, if not create entry in balances
+    setUserBalances(prev => ({ ...prev, [email]: (prev[email] || 0) + amount }));
+    const newTransaction: Transaction = { id: `admin_dep_${Date.now()}`, type: 'DEPOSIT', amount: amount, date: new Date().toISOString(), description: `Recarga Admin a: ${email}`, userEmail: email };
     setTransactions(prev => [newTransaction, ...prev]);
   };
 
   const addPaymentMethod = (method: Omit<PaymentMethod, 'id'>) => {
-    const newMethod: PaymentMethod = {
-      ...method,
-      id: `pm_${Date.now()}`
-    };
+    const newMethod: PaymentMethod = { ...method, id: `pm_${Date.now()}` };
     setPaymentMethods(prev => [...prev, newMethod]);
   };
 
@@ -377,27 +375,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   return (
     <AppContext.Provider value={{ 
-      user, 
-      login, 
-      logout, 
-      services, 
-      subscriptions, 
-      transactions, 
-      rechargeRequests,
-      paymentMethods,
-      buyService, 
-      reportIssue,
-      addBalance,
-      requestRecharge,
-      processRecharge,
-      updateServicePrice,
-      addService,
-      adminRechargeUser,
-      fulfillSubscription,
-      refreshUserBalance,
-      redeemPoints,
-      addPaymentMethod,
-      deletePaymentMethod
+      user, allUsers, login, registerUser, logout, 
+      services, subscriptions, transactions, rechargeRequests, paymentMethods,
+      buyService, reportIssue, addBalance, requestRecharge, processRecharge,
+      updateServicePrice, addService, adminRechargeUser, fulfillSubscription,
+      refreshUserBalance, redeemPoints, addPaymentMethod, deletePaymentMethod,
+      isMobileMenuOpen, toggleMobileMenu, closeMobileMenu
     }}>
       {children}
     </AppContext.Provider>
