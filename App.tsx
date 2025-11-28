@@ -55,7 +55,8 @@ const MainLayout: React.FC = () => {
         
         {/* MOBILE SIDEBAR OVERLAY */}
         {/* Only visible when isMobileMenuOpen is true on mobile devices */}
-        <div className={`fixed inset-0 z-40 md:hidden transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
+        {/* UPDATED Z-INDEX TO 60 TO ENSURE IT COVERS NAVBAR IF NEEDED OR IS TOPMOST */}
+        <div className={`fixed inset-0 z-[60] md:hidden transition-opacity duration-300 ${isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}>
              <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={closeMobileMenu}></div>
              <div className={`absolute top-0 left-0 h-full w-64 bg-dark-900 border-r border-gray-700 p-4 transform transition-transform duration-300 ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                  <div className="flex justify-between items-center mb-6">

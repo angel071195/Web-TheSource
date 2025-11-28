@@ -2,11 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line } from 'recharts';
-import { DollarSign, Users, ShoppingCart, Activity, Bell, Send, Check } from 'lucide-react';
+import { DollarSign, Users, ShoppingCart, Activity, Bell, Send, Check, Smartphone, Download, Upload, AlertTriangle } from 'lucide-react';
 import Button from '../../components/Button';
 
 const AdminDashboard: React.FC = () => {
-  const { transactions, services, subscriptions, fulfillSubscription, allUsers } = useApp();
+  const { transactions, services, subscriptions, fulfillSubscription, allUsers, exportSystemData, importSystemData } = useApp();
 
   // Pending subscriptions (waiting for admin to fill credentials)
   const pendingSubscriptions = subscriptions.filter(s => s.status === 'PENDING');
@@ -24,6 +24,9 @@ const AdminDashboard: React.FC = () => {
     message: ''
   });
 
+  const [importText, setImportText] = useState('');
+  const [showSync, setShowSync] = useState(false);
+
   const handleOpenOrder = (subId: string) => {
     setSelectedOrder(subId);
     setFormData({ email: '', password: '', profileName: '', message: 'Servicio activo para 1 dispositivo.' });
@@ -35,6 +38,40 @@ const AdminDashboard: React.FC = () => {
     
     fulfillSubscription(selectedOrder, formData);
     setSelectedOrder(null);
+  };
+
+  const handleExport = () => {
+    const data = exportSystemData();
+    // Copy to clipboard or download file
+    const blob = new Blob([data], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_streamhub_${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    alert("Datos exportados correctamente. Guarda este archivo y cárgalo en tu otro dispositivo.");
+  };
+
+  const handleImport = () => {
+    if (!importText) return;
+    const success = importSystemData(importText);
+    if (!success) {
+      alert("Error al importar. El formato es inválido.");
+    }
+  };
+
+  const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+     if (e.target.files && e.target.files[0]) {
+         const reader = new FileReader();
+         reader.onload = (ev) => {
+             if (ev.target?.result) {
+                 importSystemData(ev.target.result as string);
+             }
+         };
+         reader.readAsText(e.target.files[0]);
+     }
   };
 
   // Mock Data calculation
@@ -73,7 +110,45 @@ const AdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-white">Panel de Control</h1>
+      <div className="flex justify-between items-center">
+         <h1 className="text-3xl font-bold text-white">Panel de Control</h1>
+         <Button variant="outline" size="sm" onClick={() => setShowSync(!showSync)}>
+            <Smartphone size={16} className="mr-2"/> Sincronizar Dispositivos
+         </Button>
+      </div>
+
+      {/* SYNC PANEL */}
+      {showSync && (
+          <div className="bg-dark-800 rounded-xl border border-yellow-600/50 p-6 shadow-2xl animate-fade-in">
+              <div className="flex items-start gap-3 mb-4">
+                  <AlertTriangle className="text-yellow-500 h-6 w-6 flex-shrink-0" />
+                  <div>
+                      <h3 className="text-lg font-bold text-white">Sincronización Manual de Datos</h3>
+                      <p className="text-sm text-gray-400 mt-1">
+                          Al no disponer de un servidor central en la nube, los datos se guardan localmente en tu dispositivo.
+                          Para ver los datos del celular en la laptop (o viceversa), debes <strong>Exportar</strong> desde el origen e <strong>Importar</strong> en el destino.
+                      </p>
+                  </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-700">
+                  <div className="bg-dark-900/50 p-4 rounded-lg">
+                      <h4 className="font-bold text-white mb-2 flex items-center gap-2"><Download size={16}/> 1. Exportar (Origen)</h4>
+                      <p className="text-xs text-gray-500 mb-3">Descarga el archivo con todos los usuarios y transacciones de este dispositivo.</p>
+                      <Button onClick={handleExport} className="w-full">Descargar Copia de Seguridad</Button>
+                  </div>
+
+                  <div className="bg-dark-900/50 p-4 rounded-lg">
+                      <h4 className="font-bold text-white mb-2 flex items-center gap-2"><Upload size={16}/> 2. Importar (Destino)</h4>
+                      <p className="text-xs text-gray-500 mb-3">Carga el archivo descargado para actualizar este dispositivo.</p>
+                      <label className="flex flex-col items-center justify-center w-full h-12 border-2 border-gray-600 border-dashed rounded-lg cursor-pointer bg-dark-800 hover:bg-dark-700">
+                          <span className="text-xs text-gray-400">Seleccionar archivo .json</span>
+                          <input type="file" accept=".json" onChange={handleFileImport} className="hidden" />
+                      </label>
+                  </div>
+              </div>
+          </div>
+      )}
 
       {/* PENDING ORDERS NOTIFICATIONS */}
       <div className="bg-gradient-to-r from-gray-900 to-dark-800 rounded-xl border border-brand-500/50 shadow-2xl overflow-hidden relative">

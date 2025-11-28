@@ -28,6 +28,10 @@ interface AppContextType {
   addPaymentMethod: (method: Omit<PaymentMethod, 'id'>) => void;
   deletePaymentMethod: (id: string) => void;
   
+  // Data Sync
+  exportSystemData: () => string;
+  importSystemData: (jsonData: string) => boolean;
+
   // Mobile UI
   isMobileMenuOpen: boolean;
   toggleMobileMenu: () => void;
@@ -373,6 +377,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setPaymentMethods(prev => prev.filter(pm => pm.id !== id));
   };
 
+  // DATA SYNC FEATURES
+  const exportSystemData = () => {
+    const data = {
+      allUsers,
+      userBalances,
+      userPoints,
+      services,
+      subscriptions,
+      transactions,
+      rechargeRequests,
+      paymentMethods
+    };
+    return JSON.stringify(data);
+  };
+
+  const importSystemData = (jsonData: string) => {
+    try {
+      const data = JSON.parse(jsonData);
+      if (!data.allUsers || !data.services) {
+        return false;
+      }
+      // Save all to localStorage
+      localStorage.setItem('streamhub_users_db', JSON.stringify(data.allUsers));
+      localStorage.setItem('streamhub_balances', JSON.stringify(data.userBalances));
+      localStorage.setItem('streamhub_points', JSON.stringify(data.userPoints));
+      localStorage.setItem('streamhub_services', JSON.stringify(data.services));
+      localStorage.setItem('streamhub_subs', JSON.stringify(data.subscriptions));
+      localStorage.setItem('streamhub_txs', JSON.stringify(data.transactions));
+      localStorage.setItem('streamhub_reqs', JSON.stringify(data.rechargeRequests));
+      localStorage.setItem('streamhub_methods', JSON.stringify(data.paymentMethods));
+      
+      // We must reload page to reflect changes as state initializes from storage
+      window.location.reload();
+      return true;
+    } catch (e) {
+      console.error("Error importing data", e);
+      return false;
+    }
+  };
+
   return (
     <AppContext.Provider value={{ 
       user, allUsers, login, registerUser, logout, 
@@ -380,7 +424,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       buyService, reportIssue, addBalance, requestRecharge, processRecharge,
       updateServicePrice, addService, adminRechargeUser, fulfillSubscription,
       refreshUserBalance, redeemPoints, addPaymentMethod, deletePaymentMethod,
-      isMobileMenuOpen, toggleMobileMenu, closeMobileMenu
+      isMobileMenuOpen, toggleMobileMenu, closeMobileMenu,
+      exportSystemData, importSystemData
     }}>
       {children}
     </AppContext.Provider>
